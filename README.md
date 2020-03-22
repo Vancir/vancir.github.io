@@ -1,6 +1,6 @@
 # Vancir的博客
 
-![travis-ci-status](https://travis-ci.com/Vancir/vancir.github.io.svg?branch=master)
+![travis-ci-status](https://travis-ci.com/Vancir/blog.svg?branch=master)
 
 建立博客的目的在于记录,分享和传播有趣的内容, 在不断地文字编写过程中, 凝练自己的想法并倾注于笔下. 
 

@@ -18,8 +18,8 @@
 npm install -g hexo-cli
 
 # 克隆代码并安装npm包
-git clone  https://github.com/Vancir/vancir.github.io.git
-cd vancir.github.io
+git clone  https://github.com/Vancir/blog.git
+cd blog
 npm install 
 ```
 

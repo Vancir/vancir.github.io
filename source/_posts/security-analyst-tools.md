@@ -43,17 +43,17 @@ tags:
 
 # 0x03 安全工具
 
-* readelf 
-* strings 
-* objdump
-* radare2
-* capstone
-* keystone
-* unicorn
-* angr
-* afl
+* readelf: elf文件的解析工具, 对于pwn读取文件字段等信息很有帮助
+* strings: 快速获取文件中的可见字符串. 可以设置大小端.
+* objdump: 常用于查看反汇编代码. 可以指定intel格式输出汇编
+* radare2: 全面的逆向分析的套件. 
+* capstone: 反汇编框架
+* keystone: 汇编框架
+* unicorn: 模拟执行框架
+* angr: 符号执行框架
+* afl: 模糊测试框架
 * gdb
   * peda
   * pwndbg
   * gef
-  * pwngdb
+  * pwngdb: 

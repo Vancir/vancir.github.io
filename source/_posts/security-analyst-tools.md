@@ -57,5 +57,7 @@ tags: tool
   * pwndbg
   * gef
   * pwngdb: 
+* shellen: 开源的交互式编写shellcode的环境
+* malboxes: 一键创建一个分析恶意软件用的虚拟环境. 提供了多种环境(仅win7和win10)
 
 TODO: 介绍IDA插件

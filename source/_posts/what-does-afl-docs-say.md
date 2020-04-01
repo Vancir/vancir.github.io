@@ -148,3 +148,61 @@ AFL是为单核处理单任务设计的, 但是在多核机器上完全可以将
 ### 09 还是不行?试试-d
 
 如果还是不给力, 那么就使用`-d`选项, 这样能跳过所有的确定性模糊测试步骤, 虽然这会使得测试不够深入. 
+
+## 并行Fuzz
+
+单个`afl-fuzz`只会占用1个CPU, 因此在多核系统下可以同时进行多个fuzz任务. 如果只是针对多个不相关的二进制进行fuzz的话, 只需要运行多个`afl-fuzz`程序即可, 但如果想针对同一个目标的话, fuzz的信息需要共享给其他的`afl-fuzz`实例. 
+
+### 单系统并行
+
+如果是在单个机器上对单个目标进行并发fuzz, 那么只需要创建一个所有`afl-fuzz`可用的共享文件夹, 然后指定每一个`afl-fuzz`实例命名即可. 
+
+比如运行第一个实例:
+
+``` bash
+./afl-fuzz -i testcase_dir -o sync_dir -M fuzzer01 [...other stuff...]
+```
+
+然后类似地创建接二连三的实例:
+
+``` bash
+./afl-fuzz -i testcase_dir -o sync_dir -S fuzzer02 [...other stuff...]
+./afl-fuzz -i testcase_dir -o sync_dir -S fuzzer03 [...other stuff...]
+```
+
+而每个实例会将它的状态单独保存在分隔的子文件夹内, 类似`/path/to/sync_dir/fuzzer01/`这样. 每个实例会周期性地扫描共享目录内的测试样例, 对于感兴趣的测试用例就会加入到自身的fuzz过程. `-M`是指定`master`, 而`-S`是指定`slave`. 主从实例的区别在于主实例会执行确定性检查, 而仆实例只进行随机调整. 
+
+当然如果你也可以用`-S`来运行所有实例也没关系, 对于非常慢/复杂的目标这样做常常效果不错. 但是如果你想运行多个主实例的话, 那么就会带来巨大的资源浪费. 并且需要像以下这样运行`afl-fuzz`实例.
+
+``` bash
+./afl-fuzz -i testcase_dir -o sync_dir -M masterA:1/3 [...]
+./afl-fuzz -i testcase_dir -o sync_dir -M masterB:2/3 [...]
+./afl-fuzz -i testcase_dir -o sync_dir -M masterC:3/3 [...]
+```
+
+AFL还提供了`afl-whatsup`工具用来监视各个任务的进展情况. 不过还有一点要注意: 如果你在并发时使用`-f`指定输入文件的话, 需要确保文件相互独立. 不过要是你用`@@`不带`-f`的话就不会有这样的问题. 
+
+### 多系统并行
+
+多系统并行和单系统类似, 关键区别在于需要额外编写一个简单脚本, 执行以下两个动作来同步各个fuzz实例的状态:
+
+1. 使用SSH在机器之间同步共享文件夹内的状态文件. 
+
+    ``` shell
+    for s in {1..10}; do
+        ssh user@host${s} "tar -czf - sync/host${s}_fuzzid*/[qf]*" >host${s}.tgz
+    done
+    ```
+
+2. 在剩余机器之间分发状态文件.
+
+    ``` shell
+    for s in {1..10}; do
+        for d in {1..10}; do
+            test "$s" = "$d" && continue
+            ssh user@host${d} 'tar -kxzf -' <host${s}.tgz
+        done
+    done
+    ```
+
+示例可以参考`experimental/distributed_fuzzing/`下的脚本, 或者还有另一个具有特色的实验性工具 [disfuzz-afl](https://github.com/MartijnB/disfuzz-afl), 以及另一种客户端-服务端实现 [roving](https://github.com/richo/roving).

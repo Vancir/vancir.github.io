@@ -40,6 +40,8 @@ tags: tool
 * mendeley: 文献管理工具, 它最大的特点就是跨平台免费, 并且有社区功能, 可以向你推荐社区内其他可能感兴趣的论文. 当然我的文献都存放在mendeley里, 迁移到其他的平台也会有麻烦之处吧.
 * albert: linux下的alfred替代品, 十一个快速的应用启动器, 使用起来体验非常好. 不过安装会稍有繁琐
 * tldr: 用于查阅linux命令的常用用法. 比man手册一大堆的信息要更有效
+* vcpkg: 微软推出的Win/Linux/Mac的C++库管理工具
+* 
 
 # 0x03 安全工具
 
@@ -48,7 +50,7 @@ tags: tool
 * objdump: 常用于查看反汇编代码. 可以指定intel格式输出汇编
 * radare2: 全面的逆向分析的套件. 
 * capstone: 反汇编框架
-* keystone: 汇编框架
+* keystone: 汇编框架, 可以使用vcpkg来安装
 * unicorn: 模拟执行框架
 * angr: 符号执行框架
 * afl: 模糊测试框架

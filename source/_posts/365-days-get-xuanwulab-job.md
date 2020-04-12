@@ -71,20 +71,16 @@ tags:
         2. 泄露函数地址后获取libc基址, 然后获取`execve`地址
         3. 利用csu执行`read()`向bss段写入`execve`地址和参数`/bin/sh`
         4. 利用csu执行`execve(/bin/sh)`
-
         <details>
         <summary>Q1: 为什么要先<code>read()</code>写<code>execve</code>地址, 而不是直接调用<code>execve</code>函数呢?</summary>
         因为<code>call qword ptr [r12+rbx*8]</code>指令, 实际上我们通过csu控制的是一个地址, 而该地址指向的内容才是真正函数的调用地址. 而<code>read()</code>写到bss段的是<code>execve</code>的地址, 但csu调用的时候提供的是bss段的地址, 这样才能完成函数调用. 如果直接传<code>execve</code>地址, 那么是无法调用成功的.
         </details>
-
         <details>
         <summary>Q2: 为什么可以用写入的<code>/bin/sh</code>地址能成功, 而直接用libc内的<code>/bin/sh</code>地址就不能成功呢?</summary>
         我一个可能性比较高的推测是, 回顾我们的gadget, 对于x64传参的第一个寄存器<code>rdi</code>, 其实我们的gadget只能控制寄存器<code>rdi</code>的低32位(<code>edi</code>). 而对于bss段地址来说, 它实际上是一个32位的地址(高32位为0), 而libc内的<code>/bin/sh</code>是一个64位的地址(高32位不为0), 所以没有办法传递完整的地址进去. 所以只能通过bss上写入的<code>/bin/sh</code>地址进行传参. 
         </details>
-
         <details>
         <summary>csu函数实现</summary>
-        
         ``` python
         def csu(func_addr, arg3, arg2, arg1, ret_addr):
            rbx = 0
@@ -157,10 +153,52 @@ tags:
     * 利用`%hhn`进行单字节写入, `%hn`进行双字节写入.
 </details>
 
+<details>
+<summary>Day3: 手调《漏洞战争》栈溢出漏洞/回顾软件安全保护&破解技术</summary>
+
+- [ ] 漏洞战争:
+    - [ ] 基础知识回顾:
+    - [ ] 栈溢出漏洞:
+        - [ ] CVE-2010-2883 Adobe Reader TTF 字体SING表 栈溢出漏洞:
+        - [ ] CVE-2010-3333 Microsoft RTF 栈溢出漏洞:
+        - [ ] CVE-2011-0104 Microsoft Excel TOOLBARDEF Record 栈溢出漏洞:
+        - [ ] 阿里旺旺ActiveX 控件imageMandll 栈溢出漏洞:
+        - [ ] CVE-2012-0158 Microsoft Office MSCOMCTLocx 栈溢出漏洞
+- [ ] [软件保护及分析技术]():
+    - [ ] 软件保护: 
+    - [ ] 软件破解: 
+
+</details>
 
 ## 相关资源
 
 * [CTF Wiki](https://ctf-wiki.github.io/ctf-wiki/): 起初是X-Man夏令营的几位学员, 由[iromise](https://github.com/iromise)和[40huo](https://github.com/40huo)带头编写的CTF知识维基站点. 我早先学习参与CTF竞赛的时候, CTF一直没有一个系统全面的知识索引. [CTF Wiki](https://ctf-wiki.github.io/ctf-wiki/)的出现能很好地帮助初学者们渡过入门的那道坎. 我也有幸主要编写了Wiki的Reverse篇. 
+* [漏洞战争:软件漏洞分析精要](https://book.douban.com/subject/26830238/): [riusksk](http://riusksk.me/)写的分析大量漏洞实例的书, 一般建议先学习过[《0day安全:软件漏洞分析技术》](https://book.douban.com/subject/6524076/)后再阅读该书. 我早先阅读过该书的大部分内容, 一般我看漏洞分析的文章都有点跟不太上, 但是看该书的时候作者讲的还是蛮好的. 另外该书是按`漏洞类型`和`CVE实例`划分章节, 所以可以灵活挑选自己需要看的内容. 
+* [0day安全:软件漏洞分析技术](https://book.douban.com/subject/6524076/): Windows漏洞分析入门的必看书就不多介绍了. 这本书曾一度抄到千元的价格, 好在[看雪](https://www.kanxue.com/)近年组织重新印刷了几次, 我也是那时候入手的该书, 可以多关注下看雪的活动. 该书的内容很多也很厚实, 入门看的时候可谓痛不欲生, 看不懂的就先跳过到后面, 坚持看下来就能渡过入门的痛苦期了.
+* [软件保护及分析技术](https://book.douban.com/subject/26841178/): 该书分为2个部分, 前半部分讲保护和破解的技术, 后半部分造轮子. 前半部分讲的技术分类都蛮多的, 不过大多都是点到即止深度不够, 所以我一般都是看前半部分的当速查和回顾的工具书. 我接下来的目标是该书后半的造轮子部分. 
+
+## 腾讯玄武实验室
+
+### 招聘情报
+
+<details>
+<summary>2020/4/8 实习生招募</summary>
+
+> 来自玄武实验室微信公众号当日推送
+
+基本要求: 
+1. 在任意系统环境(`Android/Linux/MacOS/iOS/Win`)下有丰富`逆向调试经验`, 并熟悉`安全机制`和`底层架构`.
+2. 熟练使用一种`编译型语言`和一种`脚本语言`
+
+加分项:
+1. `现实漏洞研究分析经验`, `实际挖掘过漏洞`, `写过利用代码`. 
+2. 掌握漏洞研究所需的各种能力, 包括`IDA插件开发`, `Fuzzer开发`, `代码脱壳加密`, `网络协议分析`等.
+
+优劣势分析: 
+1. 我有足量时间的`Android/Linux/Win`的逆向调试经验, 对于`Linux/Win`的安全机制和底层架构有一定了解, 不了解`Android`的安全机制和底层架构.
+2. 编译型语言(`C/C++`)我的掌握程度一般, 脚本语言(`Python`)掌握良好. 
+3. 漏洞研究分析经验是工作的必要内容, IDA插件开发部分, 我曾学习过[IDAPython](https://github.com/Vancir/IDAPython-Scripts)的内容, 对于7.0以上版本还需要了解. `Fuzzer`开发部分是我欠缺的, 我仅详细阅读过`FuzzIL`和`AFL`的源码实现, 并未有实际的开发经验. 有着一定的代码脱壳加密经验, 不过仍需多加练习. 网络协议分析我不擅长也不喜欢, 可以忽略.
+</details>
 
 ## 关于X-Man夏令营
 

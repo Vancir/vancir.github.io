@@ -154,19 +154,86 @@ tags:
 </details>
 
 <details>
-<summary>Day3: 手调《漏洞战争》栈溢出漏洞/回顾软件安全保护&破解技术</summary>
+<summary>Day3: 回顾软件安全保护技术和学习ARM汇编基础</summary>
 
-- [ ] 漏洞战争:
-    - [ ] 基础知识回顾:
-    - [ ] 栈溢出漏洞:
-        - [ ] CVE-2010-2883 Adobe Reader TTF 字体SING表 栈溢出漏洞:
-        - [ ] CVE-2010-3333 Microsoft RTF 栈溢出漏洞:
-        - [ ] CVE-2011-0104 Microsoft Excel TOOLBARDEF Record 栈溢出漏洞:
-        - [ ] 阿里旺旺ActiveX 控件imageMandll 栈溢出漏洞:
-        - [ ] CVE-2012-0158 Microsoft Office MSCOMCTLocx 栈溢出漏洞
-- [ ] [软件保护及分析技术]():
-    - [ ] 软件保护: 
-    - [ ] 软件破解: 
+- [x] 软件保护技术: 
+    - [x] 反调试:
+        * 利用WinAPI检测调试状态: [IsDebuggerPresent](https://ctf-wiki.github.io/ctf-wiki/reverse/windows/anti-debug/isdebuggerpresent-zh/).
+        * 内存数据检查: 比如通过`PEB`的字段(`BeingDebug`), 堆上的标志信息([Heap flags](https://ctf-wiki.github.io/ctf-wiki/reverse/windows/anti-debug/heap-flags-zh/))来检测调试.
+        * 调试驱动检测: 基于一些使用了驱动的调试器的行为特征, 比如`调试器会在启动后创建相应的驱动链接符号`, 来确定是否存在调试器.
+        * [进程窗口检测](https://ctf-wiki.github.io/ctf-wiki/reverse/windows/anti-debug/example-zh/#_3): 比如枚举当前所有进程名/窗口名来检查是否存在已知调试器.
+        * 特征码检测: 枚举当前所有正在运行的进程, 匹配特定调试器的内存代码数据来判断是否有调试器. 
+        * [时间差检测](https://ctf-wiki.github.io/ctf-wiki/reverse/windows/anti-debug/example-zh/#_2): 通过调试和非调试模式下程序运行的时间差异来判断是否存在调试. 
+        * 断点检测/[异常检测](https://ctf-wiki.github.io/ctf-wiki/reverse/windows/anti-debug/example-zh/#seh): 断点检测在于判断内存代码是否被修改为`int3`, `int 2d`等软中断指令, 异常检测在于故意触发异常,如果调试器接管了异常则认定为存在调试器.
+        * 功能破坏: 基于大部分程序通常都不会使用系统提供的调试功能这一假设, 保证程序正常运行的前提下, 破坏系统提供的调试相关功能. 比如在创建线程时指定`ThreadHideFromDebugger`属性可以隐藏线程引发的异常, 接收不到异常调试器就无法正常工作. 
+        * 双进程保护: 基于一个进程只能同时被一个调试器调试的前提, 以调试方式启动被保护的程序, 通过占用调试行为的方式来阻止攻击者去调试分析受保护程序.
+    - [x] 反虚拟机: 
+        * BIOS信息检测: 虚拟机软件厂商的BIOS通常具有明显的品牌特征. 
+        * 字符串特征检测: 虚拟机产品明显的字符串特征.
+        * [后门端口检测](https://ctf-wiki.github.io/ctf-wiki/reverse/windows/anti-debug/example-zh/#vmware): 比如VMWARE的后门I/O端口`0x5658("VX")`读取数据得到`VMXh`
+    - [x] 数据校验:
+        * 文件校验: 实现计算好程序文件的校验值, 然后运行时再校验比对判断文件本身是否被修改. 
+        * 内存校验: 通常程序运行时, `.text/.rsrc`等区段是不会修改的, 通过运行时计算内存数据的校验值来判断内存数据是否被修改.
+    - [x] 导入表加密: 保护导入表能阻止攻击者去获取对应的符号信息, 增大分析难度. 
+        1. 可以简单地劫持导入表函数调用处来隐藏调试器/反汇编器提供的符号信息.
+        2. 也可以预先将导入表函数地址加密存储到某个位置, 然后将导入表RVA指向解密代码, 解密代码运行后得到真实的函数地址, 并跳转过去执行.
+        3. 另一种方式就是, 将导入表函数的入口代码进行加密或虚拟化, 在运行时解密.
+        4. IAT模拟: 自己实现一些程序可能调用的外部函数, 然后替换导入表内的原始函数.
+    - [x] 模块拷贝移位: 用于对抗代码Hook的技术, 方法是复制移位模块, 然后映射模块内的数据到内存以及重定位, 替换原模块函数调用地址.
+    - [x] 资源加密: 
+        1. 在程序运行时将资源解压/解密, 然后修正PE文件头的资源指向.
+        2. Hook各种与资源相关的函数, 然后在调用函数时动态解密资源.
+    - [x] 代码加密: 代码加密的目的是将原始代码转换为等价的, 极其复杂的, 更多的代码. 
+        * 代码膨胀/变形: 将1条或多条指令转变为等价的其他指令, 更多是用于膨胀. 
+        * [垃圾代码(花指令)](https://ctf-wiki.github.io/ctf-wiki/reverse/windows/anti-debug/junk-code-zh/): 目的也是膨胀, 但是方式就是插入无用的或者干扰(误导)调试器反汇编算法的代码. 
+        * 代码乱序(平坦化): 通过跳转指令打乱指令的正常顺序, 增大分析难度.
+        * 多分支: 也是花指令的一种, 只是这里的花指令着重在分支跳转指令上, 这些分支跳转大部分是根本不会执行的deadcode, 但是会让攻击者在分析时难以确定代码的具体执行流程.
+        * call链: 通过call指令来打乱执行流程. 
+    - [x] 代码虚拟化: 设计一套虚拟机和对应的opcode来在保证语义的前提下, 模拟原本的指令. 
+        虚拟机本质也是程序代码, 运行虚拟机本身也会影响当前的上下文, 因此虚拟机设计时需要保存/恢复上下文, 解决虚拟机和原始代码在上下文的使用冲突. 通常有以下两种方案:
+        * 堆机: 开辟新的栈空间来运行虚拟机代码, 代码执行完后恢复原始的栈空间地址即可. 
+        * 栈机: 不开辟新空间, 在原有栈空间分出一部分专门给虚拟机使用, 并避免原始指令影响到虚拟机专用的栈空间.
+    * 脚本引擎: 将程序的部分功能分交给脚本引擎解释执行.
+    * 网络加密: 将程序的部分代码放到服务器执行, 服务器只返回代码的执行结果. 
+    * 硬件加密: 类似网络加密, 只是将关键数据/代码转移到了硬件介质里.
+    * 代码签名: 利用签名严重算法, 对程序文件数据进行签名, 将对这些签名的校验作为能否运行该软件的判断条件.
+- [x] [ARM汇编基础](https://azeria-labs.com/writing-arm-assembly-part-1/)
+    - [x] [Introduction to ARM Assembly](https://azeria-labs.com/writing-arm-assembly-part-1/)
+        * ARM为RISC指令, 相比CISC具有精简的指令和更多的通用寄存器.
+        * ARM只能使用操作寄存器的指令, 并且使用`Load/Store`模型访问内存(也就是只有`Load/Store`指令能访问内存). 
+        * 指令精简可以带来更快的运行速度, 但同时在可用指令有限的情况下难以高效地编写软件. 
+        * ARM有两种模式`ARM模式`和`Thumb模式`. `Thumb模式`下的指令长度既可以是`2字节`也可以是`4字节`.
+        * `ARMv3`前使用`小端`, 之后支持`双端`并且可以切换字节序.
+    - [x] [Data Types Registers](https://azeria-labs.com/arm-data-types-and-registers-part-2/)
+        * `s`后缀表示`signed`, `b`表示`byte`长度为8, `h`表示`halfword`长度为16. ARM的`word`是`32`位长.
+        * 大小端的切换由`CPSR`寄存器的第`9`位`E`来指示. 
+        * 寄存器数量取决于ARM的版本. 通常有`30`个32位寄存器, 前`16`个寄存器用户模式下可用, 其他寄存器只有特权模式下可用. 
+          * `R0-R6`为通用寄存器, 其中`R0`对应`EAX`
+          * `R7`用于保存系统调用号
+          * `R8-R10`也是通用寄存器
+          * `R11(FP)`类似于`EBP`, 也就是栈基寄存器
+          * `R12(IP)`即`Intra Procedural Call`内部过程调用寄存器.(x86没有接触过呢)
+          * `R13(SP)`类似于`ESP`, 也就是栈顶寄存器
+          * `R14(LR)`:即`Link Register`, 链接寄存器
+          * `R15(PC)`: 程序计数器, 类似于`EIP`.
+          * `CPSR`: 当前程序状态寄存器, 类似于`EFLAGS`.
+        * ARM上的函数调用约定: 前四个参数存储在寄存器`R0-R3`中.
+        * 链接寄存器`R14(LR)`: 据[解释](https://baike.baidu.com/item/%E9%93%BE%E6%8E%A5%E5%AF%84%E5%AD%98%E5%99%A8/8767852?fr=aladdin), `LR`实际上是函数调用时用于保存函数的返回地址, 意义在于快速进入和返回`叶函数`. 
+        * 程序计数器`R15(PC)`: ARM模式下指令长度为4, Thumb模式下长度为2. PC会根据所处模式来递增相应的指令长度. 执行分支指令时, 会将分支跳转的目的地址保存到`PC`. 但程序执行过程中, `PC`存储的总是当前执行指令的`后2条`指令(ARM模式就+8, Thumb模式就+4).
+</details>
+
+<details>
+<summary>Day4: 学习ARM汇编基础和CTF Wiki的花式ROP</summary>
+
+> 传送门: [azeria-labs](https://azeria-labs.com/writing-arm-assembly-part-1/) / [ROP Tricks](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/stackoverflow/fancy-rop-zh/)
+
+- [ ] [ARM Assembly](https://azeria-labs.com/writing-arm-assembly-part-1/)
+    - [ ] [ARM Instruction Set](https://azeria-labs.com/arm-instruction-set-part-3/)
+    - [ ] [Memory Instructions: Loading and Storing Data](https://azeria-labs.com/memory-instructions-load-and-store-part-4/)
+    - [ ] [Load and Store Multiple](https://azeria-labs.com/load-and-store-multiple-part-5/)
+    - [ ] [Conditional Execution and Branching](https://azeria-labs.com/arm-conditional-execution-and-branching-part-6/)
+    - [ ] [Stack and Functions](https://azeria-labs.com/functions-and-the-stack-part-7/)
+- [ ] [ROP Tricks](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/stackoverflow/fancy-rop-zh/)
 
 </details>
 

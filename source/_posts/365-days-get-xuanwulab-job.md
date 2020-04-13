@@ -227,14 +227,79 @@ tags:
 
 > 传送门: [azeria-labs](https://azeria-labs.com/writing-arm-assembly-part-1/) / [ROP Tricks](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/stackoverflow/fancy-rop-zh/)
 
-- [ ] [ARM Assembly](https://azeria-labs.com/writing-arm-assembly-part-1/)
-    - [ ] [ARM Instruction Set](https://azeria-labs.com/arm-instruction-set-part-3/)
-    - [ ] [Memory Instructions: Loading and Storing Data](https://azeria-labs.com/memory-instructions-load-and-store-part-4/)
-    - [ ] [Load and Store Multiple](https://azeria-labs.com/load-and-store-multiple-part-5/)
-    - [ ] [Conditional Execution and Branching](https://azeria-labs.com/arm-conditional-execution-and-branching-part-6/)
-    - [ ] [Stack and Functions](https://azeria-labs.com/functions-and-the-stack-part-7/)
-- [ ] [ROP Tricks](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/stackoverflow/fancy-rop-zh/)
-
+- [x] [ARM Assembly](https://azeria-labs.com/writing-arm-assembly-part-1/)
+    - [x] [ARM Instruction Set](https://azeria-labs.com/arm-instruction-set-part-3/)
+        * ARM模式亦或是Thumb模式跟所处的特权等级无关. 
+        * 开发ARM Shellcode时需要尽量避免`NULL`空字节出现, 因此常用Thumb指令
+        * ARM版本之间会有略微差别, 需要根据对应版本查询[官方文档](http://infocenter.arm.com/help/index.jsp)
+        * Thumb有三个版本:
+            1. Thumb-1: 16比特长, 用于ARMv6及早期版本
+            2. Thumb-2: 16/32比特长, 扩展了Thumb-1, 支持更多的指令. 适用于`ARMv6T2`和`ARMv7`.
+            3. ThumbEE: 包括一些对动态生成代码的变化.
+        * ARM和Thumb指令的区别:
+            1. 条件执行: ARM所有指令都可以条件执行, Thumb只能通过`IT`指令允许部分指令有条件地执行.
+            2. 32位表示: 32位的Thumb指令会多一个`.w`的后缀
+            3. 桶式移位器(ARM独有特性): 能用于精简指令. 
+        * 要切换处理器执行状态, 需要满足以下两者条件其一:
+            1. 使用分支指令`BX`或`BLX`并将目标寄存器的最低有效位设置为`1`(通过`+1`实现)
+            2. 状态寄存器置位T
+        * ARM汇编指令格式`MNEMONIC{S}{condition} {Rd}, Operand1, Operand2`. 注意`Operand2`的使用稍有灵活, 并且有些指令中`Operand1`是隐含的.
+    - [x] [Memory Instructions: Loading and Storing Data](https://azeria-labs.com/memory-instructions-load-and-store-part-4/)
+        * `[pc, #12]`表示`pc`相对寻址. 不过要注意, ARM里的`pc`指的是当前指令的下`2`条指令位置, 也就是ARM模式下`+8`, Thumb模式下`+4`
+        * 地址模式: offset / pre-indexed / post-indexed
+            * 以`立即数`作为偏移的情况:
+                * `str r2, [r1, #2]`: 地址模式: offset. 直接将r2寄存器中的值存到`r1+2`所表示的地址处. `r1`没有变化
+                * `str r2, [r1, #4]!`: 地址模式: pre-indexed(`!`是一个标识的特征). 类似offset寻址模式, 寻址`r1+4`, 寻址存储完执行`r1=r1+4`
+                * `ldr r3, [r1], #4`: 地址模式: post-indexed. 寻址`r1`, 寻址完执行`r1=r1+4`
+            * 以`寄存器`作为偏移的情况: 类似立即数作偏移的情况, 很好理解. 
+            * 以`移位寄存器`作为偏移的情况: 类似立即数作偏移的情况, 不过移位的优先级是最高的, 比如`str r2, [r1, r2, LSL#2]`就是将r2内的值保存到`r1+r2<<2`的地址处.
+        * ARM使用立即数: ARM使用立即数的方式很不灵活, 格式为`v = n ror 2*r` 其中`n in [0-255]`, `r in [0-30]`. 对于不能合规的立即数, 考虑拆分成两个更小的数加起来, 或者使用`LDR`指令比如`LDR r1, =511`
+    - [x] [Load and Store Multiple](https://azeria-labs.com/load-and-store-multiple-part-5/)
+        * 多次加载/存储可以使用`LDM`和`STM`指令
+        * `LDM`和`LDR`的方向是相反的, 同样`STM`和`STR`方向也相反
+        * 扩展`-IA (increase after), -IB (increase before), -DA (decrease after), -DB (decrease before)`
+        * `PUSH`和`POP`和x86汇编基本一致. 
+        * `PUSH`等价于`STMDB sp! reglist`
+        * `POP`等价于`LDMIA sp! reglist`
+    - [x] [Conditional Execution and Branching](https://azeria-labs.com/arm-conditional-execution-and-branching-part-6/)
+        * 分支条件在标志寄存器中会相应地置位, 这点跟x86一致, 区别主要在标志寄存器各个位的含义略有不同. ARM的分支通过在指令后加相应的条件码来实现.
+            | Condition Code | Meaning (for cmp or subs) | Status of Flags  |
+            | ---- | -- | -- |
+            | CS or HS | Unsigned Higher or Same (or Carry Set) | C==1 | 
+            | CC or LO | Unsigned Lower (or Carry Clear) | C==0 |
+            | MI | Negative (or Minus) | N==1 |
+            | PL | Positive (or Plus) | N==0 |
+            | AL | Always executed | - |
+            | NV | Never executed | - |
+            | VS | Signed Overflow | V==1 |
+            | VC | No signed Overflow | V==0 |
+            | HI | Unsigned Higher | (C==1) && (Z==0) |
+            | LS | Unsigned Lower or same | (C==0) || (Z==0) |
+        * `IT`是`IF-Then-(Else)`的缩写.
+        * `IT`指令格式: `IT{x{y{z}}} cond`, 也就是最多可以有条件地执行`4`条指令
+            * `cond`指定`IT`块中第`1`条指令的条件
+            * `x`指定第`2`条指令的条件, `y`指定第`3`条, `z`指定第`4`条
+        * `IT`块里`T`的条件要跟`I`保持一致, `E`的条件要跟`I`和`T`相反. (这也很好理解, 就是ARM划分分支的一种形式)
+        * 条件码的反义就不硬背了, 直接看`ITE`就可以判断`IT`块里的情况. 
+        * `branch`指令跟x86的类似, 只是助记符不一致, 理解还是很好理解的. 
+            * `B`: 单纯跳转分支
+            * `BL`: 将`PC+4`保存到`LR`然后跳转分支
+            * `BX/BLX`: 相比多了一个`Exchange`, 也就是切换指令集(`ARM <-> Thumb`)
+            * `BX/BLX`通常会使用类似`add r2, pc, #1; bx r2`的方法先取`pc`然后`+1`的方法使最低有效位置为1(`0`转ARM，`1`转Thumb), 然后用`BX/BLX`切换指令集. (这里不用担心内存块对齐`4`的问题, CPU会自动屏蔽没有对齐的那个bit1/0). 
+    - [x] [Stack and Functions](https://azeria-labs.com/functions-and-the-stack-part-7/)
+        * 栈的部分不必多说
+        * 函数部分熟悉`Prologue`, `Body`和`Epilogue`
+            * `prologue`: `push {r11, lr}; add r11, sp, #0; sub sp, sp, #16`
+            * `body`: `mov r0, #1; mov r1, #2; bl max`
+            * `epilogue`: `sub sp, r11, #0; pop {r11, pc}`
+- [x] [ROP Tricks](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/stackoverflow/fancy-rop-zh/)
+    - [x] [stack pivoting](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/stackoverflow/fancy-rop-zh/#stack-pivoting)
+        * 直接劫持栈指针指向攻击者的内存, 可以以较少的指令达成攻击, 对于开启PIE保护的程序也可以适用. 
+        * 利用的gadget为`pop rsp/esp`, 也可以通过`libc_csu_init`的gadget经过错位获得. 
+        * 有办法控制到`esp`后, 还需要想办法将`esp`的值指向写入的shellcode部分. 可以加`\x90`垫.
+    - [x] [Stack smash](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/stackoverflow/fancy-rop-zh/#stack-smash)
+        * Canary检查到溢出后, 程序会执行`__stack_chk_fail`函数打印`argv[0]`指针. 而攻击思路就是借栈溢出覆盖`argv[0]`实现信息泄露. 
+        * 攻击需要确定溢出到`argv[0]`所需要的字节数, 以及需要溢出的地址. 
 </details>
 
 ## 相关资源

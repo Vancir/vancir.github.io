@@ -302,6 +302,72 @@ tags:
         * 攻击需要确定溢出到`argv[0]`所需要的字节数, 以及需要溢出的地址. 
 </details>
 
+<details>
+<summary>Day5: 学习CTF Wiki整数溢出和堆管理机制</summary>
+
+> 在此前需要了解glibc的堆内存管理器的机制. 主要参考 [glibc内存管理ptmalloc源代码分析](https://paper.seebug.org/papers/Archive/refs/heap/). Seebug有一个[堆资料的归档](https://paper.seebug.org/papers/Archive/refs/heap/)也可以省下找资料的功夫. 
+
+- [x] 整数溢出:
+    * 上界溢出: 上界溢出能使得数值变得极小, 有符号整数`正极大=>0`, 无符号整数`正极大=>负极小`
+    * 下界溢出: 跟上界溢出相反, 有符号整数`0=>正极大`, 无符号整数从`负极小=>正极大`
+    * `错误的类型转换`和`没有严格限制数值范围`是造成整数溢出的两个常见原因. 
+- [x] 堆溢出基础:
+    * `malloc(size_t n)`:
+        * 返回指针, 指向新分配的`至少为n字节`的内存块地址. 
+        * 如果`n=0`, 返回系统允许的`最小块`. 通常32位下是`16字节`, 64位下是`24或32字节`. 
+        * `size_t`通常是无符号整数, 因此`n<0`会造成整数溢出变成非常大的值, 而malloc通常也会因为分配不了这么大的内存而失败. 
+    * `free(void* p)`:
+        * 释放由`p`指向的内存块. 
+        * 当`p=Null`时, `free`不会进行任何操作
+        * `p`被`double free`后造成漏洞. 
+        * 当释放很大的内存块时, 会将该内存还给系统
+    * 系统调用`(s)brk / mmap`: `malloc`和`free`都是通过系统调用来分配释放内存.
+        * `(s)brk`: 可以通过增加`brk`的大小来向操作系统申请内存. 比如`curr_brk = sbrk(0); brk(curr_brk+4096);`就可以在`curr_brk`的基础上新增加`0x1000`的堆内存空间.
+        * 查看堆内存可以根据进程的`pid`号去`cat /proc/[pid]/maps`查看.
+        * `mmap`: `mmap`相比`brk`的操作粒度更细一些, 有几个可以控制的参数. 类似`mmap(NULL, (size_t)132*1024, PROT_READ|PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)`
+        * `dlmalloc`所有的线程都`共享一个堆`, 因此不支持多线程, 如果两个线程同时申请内存, 就只能一个线程进入`临界区`, 另一个线程等待. 
+        * 操作系统倾向于第一次直接分配一个大内存给程序, 避免多次分配内存(切换内核态和用户态)开销. 同时释放的内存也不会立即回收, 而是交由glibc继续管理. 
+- [x] [ptmalloc源代码分析](https://paper.seebug.org/papers/Archive/refs/heap/glibc%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86ptmalloc%E6%BA%90%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90.pdf):
+    - [x] 基础知识
+        - [x] x86平台Linux进程内存布局:
+            * 32位Linux会将ELF载入到`0x8048000(128M)`
+            * `.bss`段与`stack`之间的空间分为两部分: `heap`和`mmap region`
+            * `stack`和`mmap region`都是反向生长(`高地址=>低地址`), `heap`是正向`低地址=>高地址`
+        - [x] 操作系统内存分配的相关函数: 
+            * 内存的**延迟分配**: 只有在真正访问一个地址的时候才建立这个地址的物理映射. Linux内核在用户申请内存时分配的是一个线性区(虚拟内存), 只有当用户使用这块内存的时候内核才会分配具体的物理页面给用户. 而物理页面的释放也是通过释放线性区, 找到其对应的物理页面, 将其全部释放. 
+            - [x] Heap相关函数: 
+                * `int brk(void *addr);` brk()是一个非常简单的系统调用, 仅仅只是改变`mm_struct`结构的成员变量`brk`的值
+                * `void *sbrk(intptr_t increment);` 注意`increment=0`时, sbrk()返回的是进程当前brk值, `increment>0`时扩展brk, `increment<0`时收缩brk.
+            - [x] Mmap相关函数:
+                * `void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);` 将一个文件或其他对象映射进内存
+                    * `prot`是内存保护标志: 有`PROT_EXEC`, `PROT_READ`, `PROT_WRITE`, `PROT_NONE`.
+                    * `flags`: 指定映射对象的类型, 映射选项和映射页是否可以共享. (不太懂什么含义先忽略)
+    - [x] 概述: 
+        - [x] 内存管理方法: 
+            1. C风格的内存管理: 实现`malloc`和`free`函数, 通过调用`brk()`和`mmap()`来管理内存. 但是需要程序员手动管理内存, 繁琐复杂困难. 
+            2. 池式内存管理: 为程序的每个特定阶段分配特定的内存. 优点是简单快速易于实现, 缺点是只适用于操作分阶段的程序, 兼容性差难以维护.
+            3. 引用计数: 通过标记引用次数来判断数据结构是否存活.
+            4. 垃圾回收: 垃圾回收会在可用内存减少到一定程度时才会启动, 首先以程序所知的"可用数据"(栈数据,全局变量,寄存器)出发, 去追踪相应存活的数据. 没有找到的其他数据就被标记为垃圾进行销毁. 
+</details>
+
+<details>
+<summary>Day6: ptmalloc2内存管理机制和阅读小型堆分配器源码</summary>
+
+- [ ] ptmalloc2内存管理概述
+    - [ ] 内存管理的设计假设
+    - [ ] 内存管理数据结构
+        - [ ] `main_arena`与`non_main_arena`
+        - [ ] `chunk`的组织
+        - [ ] 空闲`chunk`容器
+        - [ ] `sbrk`与`mmap`
+    - [ ] 内存分配概述
+    - [ ] 内存回收概述
+    - [ ] 配置选项概述
+    - [ ] 使用注意事项
+- [ ] heap_allocator源码学习
+
+</details>
+
 ## 相关资源
 
 * [CTF Wiki](https://ctf-wiki.github.io/ctf-wiki/): 起初是X-Man夏令营的几位学员, 由[iromise](https://github.com/iromise)和[40huo](https://github.com/40huo)带头编写的CTF知识维基站点. 我早先学习参与CTF竞赛的时候, CTF一直没有一个系统全面的知识索引. [CTF Wiki](https://ctf-wiki.github.io/ctf-wiki/)的出现能很好地帮助初学者们渡过入门的那道坎. 我也有幸主要编写了Wiki的Reverse篇. 

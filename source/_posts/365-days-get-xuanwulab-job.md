@@ -353,19 +353,97 @@ tags:
 <details>
 <summary>Day6: ptmalloc2内存管理机制和阅读小型堆分配器源码</summary>
 
-- [ ] ptmalloc2内存管理概述
-    - [ ] 内存管理的设计假设
-    - [ ] 内存管理数据结构
-        - [ ] `main_arena`与`non_main_arena`
-        - [ ] `chunk`的组织
-        - [ ] 空闲`chunk`容器
-        - [ ] `sbrk`与`mmap`
-    - [ ] 内存分配概述
-    - [ ] 内存回收概述
-    - [ ] 配置选项概述
-    - [ ] 使用注意事项
-- [ ] heap_allocator源码学习
-
+- [x] ptmalloc2内存管理概述
+    - [x] 内存管理的设计假设
+        1. 对`长生命周期`的`大内存`分配使用`mmap`, `特别大`的内存总是使用`mmap`, `短生命周期`的内存分配用`brk`
+        2. 尽量缓存临时使用的`空闲小内存块`, `大内存`或`长生命周期`内存释放时则直接返还系统
+        3. `空闲小内存`只会在`malloc`和`free`期间进行合并, `free`时空闲内存块`可能放回pool而非返还系统`
+        4. 收缩堆的条件: `当前free的chunk大小 + 前后能合并的chunk大小 > 64KB`并且`堆顶的大小达到阈值`
+        5. 需要长期存储的程序不适合用ptmalloc管理内存
+        6. 多个线程可以从同一个`arena`中分配内存. 
+    - [x] 内存管理数据结构
+        - [x] `main_arena`与`non_main_arena`
+            * Doug Lea实现的内存分配器只有一个主分配区(`main_arena`), 因此每次分配内存为避免竞争都会加锁, 而这样会带来很大开销. 
+            * `ptmalloc`增加了多个非主分配区(`non_main_arena`), `main_arena`和`non_main_arena`形成环形链表进行管理. 每一个`arena`利用互斥锁, 使`线程对于该arena的访问互斥`.
+            * `main_arena`能访问进程的`heap`和`mmap`映射区域, 而`non_main_arena`只能访问`mmap`映射区域. 
+            * 线程申请内存: 先查找线程私有变量看是否已经存在一个arena, 如果有就对该arena加锁然后分配内存, 如果没有, 就去循环链表找没加锁的arena. 如果arena都加锁了, 那么malloc就会开辟新的arena, 将该arena加入循环链表, 用该arena分配内存. 
+        - [x] `chunk`的组织
+            - [x] 使用中chunk结构:
+                ![ptmalloc-busy-chunk.png](ptmalloc-busy-chunk.png)
+                * `chunk指针`指向chunk的起始位置, 而`mem指针`才是真正返回给用户的指针. 
+                * `P`: 表示前一个chunk是否在使用中. 
+                  * `P=0`表示前一个chunk空闲, 这时chunk的第一个域`prev_size`才生效. `prev_size`用于找到前一个chunk的起始地址.
+                  * `P=1`表示前一个chunk正在使用中, `prev_size`无效, 无法依据`prev_size`找到前一个块的位置(不会对前一个chunk进行任何操作)
+                * `M`: 表示chunk从内存区域分配获得. `M=1`表示从`mmap映射区域`分配, `M=0`表示从`heap区域`分配.
+                * `A`: 表示该chunk所属`arena`. `A=1`表示`non_main_arena`, `A=0`表示`main_arena`. 
+            - [x] 空闲的chunk结构:
+                ![ptmalloc-free-chunk.png](ptmalloc-free-chunk.png)
+                * 空闲状态时没有`M`标志. 
+                * `fd`指向`后一个空闲的`chunk, `bk`指向`前一个空闲`的chunk. `fd`和`bk`组合成双向链表. 
+                * `large bin`中的空闲chunk, 还有额外两个指针`fd_nextsize`和`bk_nextsize`. 用于加快在`large bin`中`查找最近匹配的空闲chunk`. 
+                * 不同的chunk链表使用`bins`或`fastbins`来组织. 
+            - [x] chunk中的空间复用:
+                * chunk之间复用一些无意义的域空间, 以尽量减小chunk所占空间. 
+                * 一个chunk正在使用时, 它后一个chunk的`prev_size`肯定是无效的, 就可以把这个空间省下来. `inuse_chunk_size = (用户请求大小+8-4)对齐8`
+        - [x] 空闲`chunk`容器
+            - [x] `Bins`
+                * 用户`free`的内存交由`ptmalloc`管理, 当用户下一次请求内存, ptmalloc就会从空闲内存里挑一块给用户, 减少了系统调用, 也就降低了开销. 
+                * `ptmalloc`将`相似大小`的chunk用`双向链表`链接起来, 这样的链表称为`bin`
+                * `ptmalloc`一共维护了`128`个bin并组成数组(array), 也就是对应了`128`个size. 
+                * 假设数组索引从1开始, `array[1] = unsorted bin`, `array[2:64] = small bins`, `array[65:128] = large bins`
+                * `small bins`: 
+                    * 两个相邻的`small bin`中的chunk大小相差`8bytes`
+                    * `small bin`里的chunk按`头进尾出`进行排列, 新释放的chunk存入链表的`头部`, 新申请的chunk从链表`尾部`取出. 
+                * `large bins`: 
+                    * 每一个`bin`分别包含`给定范围内的chunk`, chunk按大小排列, 相同大小的chunk按`头进尾出`排列. 
+                    * ptmalloc会分配`符合要求的最小chunk`
+                * 当空闲chunk链接到bin中, ptmalloc会把该chunk的`P`标志设为`0`(**注意: 这个标志实际上处在下一个`chunk`中**), 同时ptmalloc会检查它`前后的chunk`是否也是空闲的. 如果空闲, 就合并成大的chunk, 然后把合并后的chunk放到`unsorted bin`里去. 
+                * 并非所有的chunk被释放后都放到bin中. ptmalloc为了效率会把一些小的chunk先放到`fast bins`里.
+            - [x] `Fast Bins`
+                * 小内存的分配总是频繁的, `fast bins`就是为此而引入
+                * `size < max_fast(64B)`的chunk释放后放入`fast bins`内. 
+                * `fast bins`内的chunk不会改变`P`标志位, 这样也就无法将其合并. 
+                * 当需要小于`mas_fast`的chunk时, ptmalloc会首先在`fast bins`内找相应的空闲块, 找不到才会去`bins`里找. 
+                * 在某个特定时间点, ptmalloc会遍历`fast bins`, 将相邻的空闲chunk进行合并, 将合并后的chunk加入`unsorted bin`中, 然后再将`unsorted bin`中的chunk加入`bins`中
+            - [x] `Unsorted Bin`
+                * `unsorted bin`可以看做是`bins`的一个缓冲区.
+                * malloc时会优先查找`fast bins`, 然后找`unsorted bin`, 然后找`bins`. 
+                * `unsoretd bin`找不到合适的chunk, malloc会将`unsorted bin`的chunk加入到`bins`, 然后从`bins`继续查找和分配.
+            - [x] `Top chunk`
+                * `top chunk`在`main_arena`和`non_main_arena`存在不一致的地方, 具体原因在于`main_arena`是唯一能映射进程heap区域的地方.
+                * `top chunk`会在`fast bins`和`bins`都无法满足分配需求的时候使用, 如果`top chunk`也无法满足, 那么就系统调用一块新的, 然后和`top chunk`合并.
+            - [x] `mmaped chunk`: 当申请的`chunk`足够大, `top chunk`也无法满足时, ptmalloc会使用`mmap`将页映射到进程空间, 这样的chunk在释放时则直接解除映射将内存返还系统. 
+            - [x] `Last remainder`: 当需要分配一个`small chunk`但在`small bins`找不到合适的, 而`last remainder`的大小可以满足, 那么就切割`last remainder`成两个`chunk`, 一个大小合适的chunk返回给用户, 另一个chunk成为新的`last remainder`
+        - [x] `sbrk`与`mmap`
+            * ptmalloc在最开始时, 如果请求的空间小于`mmap`分配阈值, `main_arena`就使用`sbrk()`来分配内存作为heap. `non_main_arena`则使用`mmap`映射空间作为`sub-heap`. 
+            * 之后就根据用户的分配释放来管理内存, 再遇上分配空间不足的情况, `main_arena`继续使用`sbrk`来增加heap大小(申请的大小得小于mmap分配阈值), `non_main_arena`则还是使用`mmap`映射新的`sub-heap`. 
+    - [x] 内存分配概述
+        1. 分配算法概述:
+           * `size < 64B`: 用pool算法
+           * `size in 64B...512B`: 在最佳匹配算法分配和pool算法分配取合适的
+           * `size >= 512B`: 最佳匹配算法分配
+           * `size >= mmap分配阈值(128KB)`: 如果没有动态调整过mmap分配阈值, 就按大于默认的128KB就直接调用mmap. 否则大于调整过的mmap阈值才调用mmap分配
+        2. ptmalloc内存分配的具体步骤:
+           1. 获取arena的锁: 查看线程私有实例是否存在一个arena => 搜索arena的循环链表找没有加锁的arena => 所有arena都加锁了, ptmalloc开辟新的arena, 将该arena加入循环链表和线程的私有实例并加锁, 然后进行内存分配. 
+               * 开辟出来的新arena一定为`non_main_arena`, 因为`main_arena`是从父进程继承而来
+               * 开辟新arena需要调用mmap创建一个sub-heap, 并设置好top chunk
+           2. 根据用户请求大小计算实际需要分配的chunk大小
+           3. 判断申请的chunk大小是否满足 `size <= max_fast`, 满足则使用fastbins分配, 否则继续. 
+           4. 判断大小是否在small bins范围内. 是则用small bins分配, 否则继续.
+           5. 到此说明需要分配的是大内存. ptmalloc首先遍历fastbins的chunk, 将相邻chunk合并存入`unsorted bin`. 然后在unsorted bin中找合适的chunk切割返回给用户, 否则继续
+           6. 从`large bins`里找一块最小满足的chunk. 找不到则继续
+           7. 使用`top chunk`分配, 如果`top chunk`也不满足所需chunk的大小, 则继续
+           8. 使用`sbrk`或`mmap`来增大`top chunk`的大小以满足分配, 或者直接使用`mmap`来分配内存(这需要满足mmap分配阈值).
+    - [x] 内存回收概述
+        1. 首先获取arena的锁, 保证线程安全
+        2. 判断传入指针是否为0, 为0直接return
+        3. 判断释放的hcunk是否为`mmaped chunk`, 是则调用`munmap`释放. 如果开启了mmap分配阈值的动态调整, 且当前回收chunk的大小大于mmap分配阈值, 则将mmap分配阈值设置为该chunk大小, mmap收缩阈值设为mmap分配阈值的2倍, 释放完成. 否则进行下一步
+        4. 判断chunk的大小和位置, 若`chunk_size <= max_fast`且该chunk不与top chunk相邻, 则将该chunk放入fastbins中(不修改该chunk的`P`标志, 也不与相邻chunk进行合并), 否则进行下一步
+        5. 判断前一个chunk是否处在使用中, 如果前一个chunk也是空闲状态, 则一起合并
+        6. 判断后一个chunk是否为top chunk, 如果不是, 则判断后一个chunk是否空闲状态, 空闲则合并, 将合并后的chunk放到`unsorted bin`中. 如果是后一个chunk是top chunk, 那么无论它有多大都一律和top chunk合并, 更新top chunk的大小等信息. 都同样继续以下步骤
+        7. 判断合并后的chunk大小是否大于`FASTBIN_CONSOLIDATION_THRESHOLD`, 如果是, 则触发fastbins的合并操作, 合并后的chunk放入`unsorted bin`
+        8. 判断top chunk的大小是否大于mmap收缩阈值, 大于的话, 对于main_arena会试图归还topchunk的一部分(最初分配的128KB不会返还)给操作系统. 对于non_main_arena会进行sub-heap收缩, 将top chunk的一部分返还给操作系统. 如果top chunk为整个sub-heap, 会把整个sub-heap返回给系统. 至此释放结束, free()函数退出.
+            * 收缩堆的条件是当前free的chunk大小加上前后能合并的chunk的大小大于64K, 并且top chunk的大小要达到mmap收缩阈值, 才可能收缩堆.
 </details>
 
 ## 相关资源

@@ -39,10 +39,8 @@ sudo pacman -Syu
 ## 0x02 安装常用CLI工具及软件
 
 ``` bash
-sudo pacman -S yay git firefox netease-cloud-music screenkey
+sudo pacman -S yay git firefox netease-cloud-music screenkey tmux aria2 google-chrome feh rofi polybar betterlockscreen pywal-git imagemagick thefuck visual-studio-code-bin intellij-idea-ultimate-edition lxappearance deepin-wine-tim deepin-wine-wechat dolphin redshift deepin-screenshot foxitreader p7zip the_silver_searcher tig wps-office ttf-wps-fonts
 ```
-
-
 
 ## 0x03 安装设置Rime输入法
 
@@ -74,21 +72,26 @@ patch:
     "/": "/"
 
   "menu/page_size": 9
+# 编辑~/.i3/config文件填入下面这行
+exec_always --no-startup-id fcitx
 ```
 
 
 
 ## 0x04 解决音频输出的问题
 
-TODO
-
-
+``` bash
+yay -S pulseaudio pavucontrol
+pulseaudio --start
+# 打开pavucontrol配合alsamixer将音量调高
+# 然后右键下方状态栏最右边的声音按钮, 将输出调为耳机
+```
 
 ## 0x05 配置Vim
 
 todo
 
-## 0x06 配置Zsh Shell
+## 0x06 配置Fish Shell
 
 ``` bash
 yay -S fish
@@ -97,12 +100,134 @@ chsh -s /usr/bin/fish
 fish_config 
 ```
 
-## 0x07 安装终端软件alacritty
+## 0x07 配置ZSH Shell
+
+``` bash
+yay -S zsh
+# 安装oh my zsh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# 安装插件
+git clone git://github.com/zsh-users/zsh-autosuggestions $ZSH_CUSTOM/plugins/zsh-autosuggestions
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+# 编辑~/.zshrc
+ZSH_SHELL="steeef"
+plugins=(
+	git
+	zsh-autosuggestions
+	zsh-syntax-highlighting
+	z
+	extract
+	colored-man-pages
+	fzf
+)
+# 修改提示符的样式
+PROMPT=$'
+%{$purple%}#${PR_RST} %{$orange%}%n${PR_RST} %{$purple%}@${PR_RST} %{$orange%}%m${PR_RST} in %{$limegreen%}%~${PR_RST} %{$limegreen%}$pr_24h_clock${PR_RST} $vcs_info_msg_0_$(virtualenv_info)
+%{$hotpink%}$ ${PR_RST}'
+```
+
+
+
+## 0x08 安装终端软件alacritty
 
 ``` bash
 yay -S alacritty
 vim ~/.config/i3/config
 # 将终端修改为alacritty
+```
+
+## 设置ZSH配置
+
+``` bash
+alias c clear
+alias aria2c aira2c -s16 -x16
+alias setproxy="export ALL_PROXY=XXXXXXX"
+alias unsetproxy="unset ALL_PROXY"
+alias ip='curl ip.sb'
+alias grep='grep --color=auto'
+alias ra='ranger'
+```
+
+## 安装字体图标主题等
+
+``` bash
+yay -S papirus-icon-theme wqy-microhei ttf-font-awesome
+
+yay -S ttf-linux-libertine ttf-inconsolata ttf-joypixels ttf-twemoji-color noto-fonts-emoji ttf-liberation ttf-droid ttf-fira-code adobe-source-code-pro-fonts
+
+yay -S wqy-bitmapfont wqy-microhei wqy-microhei-lite wqy-zenhei adobe-source-han-mono-cn-fonts adobe-source-han-sans-cn-fonts adobe-source-han-serif-cn-fonts
+```
+
+## 配置Rofi
+
+``` bash
+yay -S pywal-git
+mkdir -p ~/.config/wal/templates
+# 使用https://github.com/ameyrk99/no-mans-sky-rice-i3wm里的.i3/rofi.rasi放置在templates目录下
+# 并重命名为config.rasi
+# 编辑~/.i3/config将mod+d由dmeun修改为rofi
+bindsym $mod+d exec rofi -show run
+```
+
+## 同步时间
+
+``` bash
+sudo hwclock --systohc
+sudo ntpdate -u ntp.api.bz
+```
+
+## 配置Ranger
+
+TODO
+
+w3m
+
+## 调准鼠标滚轮速度
+
+``` bash
+yay -S imwheel
+vim ~/.imwheelrc
+# 填入以下内容
+".*"
+None,      Up,   Button4, 4
+None,      Down, Button5, 4
+Control_L, Up,   Control_L|Button4
+Control_L, Down, Control_L|Button5
+Shift_L,   Up,   Shift_L|Button4
+Shift_L,   Down, Shift_L|Button5
+# 将imwheel写到i3的配置里自动启动, 或者直接执行imwheel也行
+imwheel
+```
+
+## 配置compton毛玻璃特效
+
+``` bash
+# manjaro i3自带compton, 但是该版本只能半透明而无法实现毛玻璃特效
+# 我们需要使用另一个分支版的compton
+# 卸载预装的compton
+yay -Rc picom
+# 需要安装asciidoc
+yay -S asciidoc
+git clone https://github.com/tryone144/compton
+cd compton
+make 
+sudo make install
+# 编辑 ~/.config/compton.conf里的opacity
+```
+
+## 配置polybar
+
+把配置文件放进去将可以
+
+## 安装WPS
+
+``` bash
+sudo pacman -S wps-office
+sudo pacman -S ttf-wps-fonts
+sudo vim /usr/bin/wps
+# 在shebang下面填入
+export XMODIFIERS="@im=fcitx"
+export QT_IM_MODULE="fcitx"
 ```
 
 

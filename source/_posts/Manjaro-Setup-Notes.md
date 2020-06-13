@@ -39,7 +39,7 @@ sudo pacman -Syu
 ## 0x02 安装常用CLI工具及软件
 
 ``` bash
-sudo pacman -S yay git firefox netease-cloud-music screenkey tmux aria2 google-chrome feh rofi polybar betterlockscreen pywal-git imagemagick thefuck visual-studio-code-bin intellij-idea-ultimate-edition lxappearance deepin-wine-tim deepin-wine-wechat dolphin redshift deepin-screenshot foxitreader p7zip the_silver_searcher tig wps-office ttf-wps-fonts
+sudo pacman -S yay git firefox netease-cloud-music screenkey tmux aria2 google-chrome feh rofi polybar betterlockscreen pywal-git imagemagick thefuck visual-studio-code-bin intellij-idea-ultimate-edition lxappearance deepin-wine-tim deepin-wine-wechat dolphin redshift deepin-screenshot foxitreader p7zip the_silver_searcher tig wps-office ttf-wps-fonts mpv
 ```
 
 ## 0x03 安装设置Rime输入法
@@ -89,7 +89,24 @@ pulseaudio --start
 
 ## 0x05 配置Vim
 
-todo
+安装neovim然后安装vim-plug用于管理插件, 然后装上YouCompleteMe插件
+
+``` bash
+yay -S neovim 
+curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+vim ~/.config/nvim/init.vim
+# 写入配置, 参考我的配置
+# 安装YCM
+yay -S vim-youcomplete-git
+# 配置里写 Plug 'Valloric/YouCompleteMe'
+# 安装好插件. 中间会有一些报错, 用以下命令
+pip install neovim 
+cd cd ~/.local/share/nvim/plugged/YouCompleteMe && python install.py
+# 进入neovim运行 :YcmRestartServer
+```
+
 
 ## 0x06 配置Fish Shell
 
@@ -176,11 +193,6 @@ sudo hwclock --systohc
 sudo ntpdate -u ntp.api.bz
 ```
 
-## 配置Ranger
-
-TODO
-
-w3m
 
 ## 调准鼠标滚轮速度
 

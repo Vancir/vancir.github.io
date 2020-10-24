@@ -4,30 +4,27 @@
 
 # Site
 title: Vancir
-subtitle: 'Reversing makes insight extraordinary'
+subtitle: ''
 description: ''
 keywords:
 author: Vancir
-language: zh-CN
+language: zh-cn
 timezone: ''
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
-url: http://www.vancir.com
+url: https://vancir.github.io
 root: /
-permalink: :title/
+permalink: :title.html
 permalink_defaults:
-pretty_urls:
-  trailing_index: true # Set to false to remove trailing 'index.html' from permalinks
-  trailing_html: true # Set to false to remove trailing '.html' from permalinks
 
 # Directory
 source_dir: source
 public_dir: public
-tag_dir: tags
+#tag_dir: tags
 archive_dir: archives
-category_dir: categories
-code_dir: downloads/code
+#category_dir: categories
+#code_dir: downloads/code
 i18n_dir: :lang
 skip_render:
 
@@ -36,7 +33,7 @@ new_post_name: :title.md # File name of new posts
 default_layout: post
 titlecase: false # Transform title into titlecase
 external_link:
-  enable: true # Open external links in new tab
+  enable: false # Open external links in new tab
   field: site # Apply to the whole site
   exclude: ''
 filename_case: 0
@@ -44,13 +41,7 @@ render_drafts: false
 post_asset_folder: true
 relative_link: false
 future: true
-highlight:
-  enable: true
-  line_number: true
-  auto_detect: false
-  tab_replace: ''
-  wrap: true
-  hljs: false
+highlight: false
 
 # Home page setting
 # path: Root path for your blogs index page. (default = '')
@@ -58,13 +49,13 @@ highlight:
 # order_by: Posts order. (Order by date descending by default)
 index_generator:
   path: ''
-  per_page: 20
+  per_page: 10
   order_by: -date
 
 # Category & Tag
-default_category: uncategorized
-category_map:
-tag_map:
+#default_category: uncategorized
+#category_map:
+#tag_map:
 
 # Metadata elements
 ## https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
@@ -93,7 +84,27 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: cactus
+theme: typography
+
+plugin:
+  - hexo-generator-category-enhance
+  - hexo-generator-feed
+  - hexo-asset-image
+  - hexo-prism-plugin
+  - hexo-toc
+
+archive_generator:
+  per_page: 0
+
+# Generate categories index page and each category page
+category_generator:
+  per_page: 10
+  enable_index_page: true
+
+# Generate tags index page and each tag page
+#tag_generator:
+#  per_page: 10
+#  enable_index_page: true
 
 # RSS
 ## Plugins: https://github.com/hexojs/hexo-generator-feed
@@ -108,6 +119,12 @@ feed:
   order_by: -date
   icon: icon.png
   
+  # For syntax highlighting
+prism_plugin:
+  mode: 'preprocess'
+  theme: 'dracula'
+  line_number: false
+
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:

@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="Vancir"><title>论文: VulDeePecker基于深度学习的漏洞检测系统 · Vancir</title><meta name="description" content="首先需要找到适用于深度学习的软件程序的表示, 论文还有code gadgets来表示程序并将其转换成向量(code gadgets在向量中是许多行(不一定连续)的, 语义相关的代码). 并据此设计实现了VulDeePecker检测系统. 评估结果表明, 在使用第一类漏洞数据集时在误报率合理的条件下有"><meta name="keywords" content=""><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="stylesheet" href="/css/style.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"><meta name="generator" content="Hexo 4.2.1"><link rel="stylesheet" href="/css/prism-dracula.css" type="text/css"></head><body><div id="stage" class="container"><div class="row"><div id="side-bar" class="col-sm-3 col-xs-12 side-container invisible"><div class="vertical-text site-title"><h3 tabindex="-1" class="site-title-small"><a href="/" class="a-title">Que sera sera</a></h3><h1 tabindex="-1" class="site-title-large"><a href="/" class="a-title">静言思之</a></h1><!--h6(onclick="triggerSiteNav()") Trigger--></div><br class="visible-lg visible-md visible-sm"><div id="site-nav" class="site-title-links"><ul><li><a href="/">回到原来</a></li><li><a href="/archives">文章归档</a></li><li><a href="/misc/aboutme.html">关于作者</a></li><li><a href="/misc/opensource.html">开源项目</a></li><li class="soc"><a href="https://github.com/vancir" target="_blank" rel="noopener noreferrer"><i class="fa fa-github">&nbsp;</i></a><a href="https://twitter.com/Vancirprince" target="_blank" rel="noopener noreferrer"><i class="fa fa-twitter">&nbsp;</i></a><a href="http://weibo.com/u/5226074301" target="_blank" rel="noopener noreferrer"><i class="fa fa-weibo">&nbsp;</i></a><a href="https://vancir.github.io/atom.xml" target="_blank" rel="noopener noreferrer"><i class="fa fa-rss">&nbsp;</i></a></li></ul><div class="visible-lg visible-md visible-sm site-nav-footer"><br class="site-nav-footer-br"><footer><p>&copy;&nbsp;2020&nbsp;<a target="_blank" href="https://vancir.github.io" rel="noopener noreferrer">Vancir</a></p><p>Theme&nbsp;<a target="_blank" href="https://github.com/SumiMakito/hexo-theme-typography" rel="noopener noreferrer">Typography</a>&nbsp;by&nbsp;<a target="_blank" href="https://www.keep.moe" rel="noopener noreferrer">Makito</a></p><p>Proudly published with&nbsp;<a target="_blank" href="https://hexo.io" rel="noopener noreferrer">Hexo</a></p></footer></div></div></div><div id="main-container" class="col-sm-9 col-xs-12 main-container invisible"><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post-container"><p class="post-title"><a>论文: VulDeePecker基于深度学习的漏洞检测系统</a></p><p class="post-meta"><span class="date meta-item">发布于&nbsp;2018-07-24</span></p><p class="post-abstract"><p>首先需要找到适用于深度学习的软件程序的表示, 论文还有<strong>code gadgets</strong>来表示程序并将其转换成向量(<strong>code gadgets</strong>在向量中是许多行(不一定连续)的, 语义相关的代码). 并据此设计实现了<strong>VulDeePecker</strong>检测系统. 评估结果表明, 在使用第一类漏洞数据集时在误报率合理的条件下有着更小的漏报率.</p>
+<h2 id="论文的主要主要贡献"><a href="#论文的主要主要贡献" class="headerlink" title="论文的主要主要贡献"></a>论文的主要主要贡献</h2><ul>
+<li>开启了使用深度学习检测漏洞的先河</li>
+<li>初步确定了: <strong>软件程序的表示</strong>, <strong>检测粒度</strong>, <strong>特定神经网络的选用</strong></li>
+<li>设计并实现了<strong>VulDeePecker</strong>. 并根据以下方面进行评估<ul>
+<li><strong>VulDeePecker</strong>可以同时处理多类漏洞吗?  -&gt; <strong>VulDeePecker</strong>使用漏洞模式(vulnerability patterns, 由神经网络训练学得)</li>
+<li>人类的专业知识可以帮助提高<strong>VulDeePecker</strong>表现吗?</li>
+<li><strong>VulDeePecker</strong>同其他漏洞检测方法相比效率如何?</li>
+</ul>
+</li>
+<li>提出了第一个用于评估<strong>VulDeePecker</strong>和其他漏洞检测系统的数据集</li>
+</ul>
+<p>论文结构:</p>
+<ul>
+<li>第二节讲述一些初步的原则</li>
+<li>第三节讨论<strong>VulDeePecker</strong>的设计</li>
+<li>第四节描述<strong>VulDeePecker</strong>的实验评估结果</li>
+<li>第五节讨论<strong>VulDeePecker</strong>的局限以及未来研究的一些问题</li>
+<li>第六节讲述前人相关工作</li>
+<li>第七节对论文进行总结</li>
+</ul>
+<h2 id="第三节-VulDeePecker的设计原理"><a href="#第三节-VulDeePecker的设计原理" class="headerlink" title="第三节 VulDeePecker的设计原理"></a>第三节 VulDeePecker的设计原理</h2><h2 id="A-定义code-gadget"><a href="#A-定义code-gadget" class="headerlink" title="A. 定义code gadget"></a>A. 定义<strong>code gadget</strong></h2><blockquote>
+<p>(Code gadget)一个code gadget由大量数据或控制上的语义相关的语句组成.</p>
+</blockquote>
+<p>为了生成<strong>code gadget</strong>我们提出<strong>key point</strong>的启发式概念, 它是一个”镜头”, 可以从特定角度来表示程序. 直观上看, <strong>key point</strong>的启发式概念, 从某种程度上说,  就是漏洞的中心, 或者就是说暗示有漏洞存在的代码片段. 对于由库/<strong>API</strong>调用的不当使用而造成的漏洞, <strong>key point</strong>就是指这些库/<strong>API</strong>函数调用. 对于数组不当使用造成的漏洞, <strong>key point</strong>就是这些数组.</p>
+<p>值得注意的是, 一种类型的漏洞, 也许会包含有多种类型的<strong>key points</strong>. 例如, <strong>buffer error</strong>漏洞可对应以下<strong>key point</strong>: 库/<strong>API</strong>调用, 数组和指针. 一个<strong>key point</strong>也可以存在于多种类型的漏洞.</p>
+<p>论文中仅关注特定的<strong>key point</strong> - 库/<strong>API</strong>函数调用. 对应于库/<strong>API</strong>函数调用, <strong>code gadget</strong>可以通过程序的数据流/控制流分析进行生成, 这也已经有许多著名的算法[23], [50]以及可用的商业产品如<strong>CheckMarx</strong>可以用来生成.</p>
+<p>B. 概览 <strong>VulDeePecker</strong></p>
+<p><strong>VulDeePecker</strong>有两个阶段: <strong>训练</strong>阶段和<strong>检测</strong>阶段. 训练阶段给的输入是大量的训练程序, (一些是存在一个或多个已知漏洞的, 而另一些则是安全的程序.)</p>
+<p>训练阶段包含4个步骤</p>
+<h3 id="步骤1-提取库-API函数调用以及对应的程序切片"><a href="#步骤1-提取库-API函数调用以及对应的程序切片" class="headerlink" title="步骤1 提取库/API函数调用以及对应的程序切片"></a>步骤1 提取库/API函数调用以及对应的程序切片</h3><p>这也包含两个子步骤</p>
+<ul>
+<li>步骤 1.1: 从训练用的程序中提取库/API函数调用. (VulDeePecker目前仅关注与key point相关的漏洞)</li>
+<li>步骤 1.2:  从步骤1.1中提取出的库/API函数中, 为每一个参数(或变量)提取一个或多个程序切片. 本论文中, 一个程序切片表示程序的语句(例: 各行代码), 这些语句在是跟库/API函数调用的参数语义相关的. 注意, 程序切片这个概念最初只是为了表示程序中有关程序点或变量的语句而引入的. [55]</li>
+</ul>
+<h3 id="步骤2-生成训练用程序的code-gadget和标记对应的真实值"><a href="#步骤2-生成训练用程序的code-gadget和标记对应的真实值" class="headerlink" title="步骤2 生成训练用程序的code gadget和标记对应的真实值"></a>步骤2 生成训练用程序的code gadget和标记对应的真实值</h3><ul>
+<li>步骤 2.1: 汇编步骤1.2获取到的程序切片为code gadgets, 每个code gadget对应一个库/API函数调用. 一个code gadget并一定对应于一系列连续的代码行. 相反, 它包含的是语义相关的多行代码(例如, 继承了编码在那些程序切片中的语义关系)</li>
+<li>步骤 2.2: 标记code gadget的真实值. 标记为1表示存在漏洞, 0表示安全. 标记是可行的, 因为我们知道训练用的程序哪些是存在漏洞的哪些不是. 如果存在漏洞, 我们也知道漏洞所在的位置.</li>
+</ul>
+<h3 id="步骤3-将code-gadget转变为向量表示"><a href="#步骤3-将code-gadget转变为向量表示" class="headerlink" title="步骤3 将code gadget转变为向量表示"></a>步骤3 将code gadget转变为向量表示</h3><ul>
+<li>步骤 3.1: 转换code gadget为确定的符号表示. 该步骤目的在于保留训练用程序的一些语义信息</li>
+<li>步骤 3.2: 对步骤3.1获得的符号表示, 将code gadget编码为向量, 作为训练BLSTM神经网络的输入. (通常情况下想要使用神经网络都得这么干)</li>
+</ul>
+<h3 id="步骤4-训练BLSTM神经网络"><a href="#步骤4-训练BLSTM神经网络" class="headerlink" title="步骤4 训练BLSTM神经网络"></a>步骤4 训练BLSTM神经网络</h3><p>将code gadget编码为向量并标记好真实值后, 就是标准的训练BLSTM神经网络的过程</p>
+<h3 id="检测阶段"><a href="#检测阶段" class="headerlink" title="检测阶段"></a>检测阶段</h3><p>给定一个或多个目标程序, 我们提取它的库/API函数调用以及对应的程序切片, 并将程序切片汇编为code gadget. code gadget转化成符号表示再编码为向量输入给训练好的BLSTM神经网络. 神经网络会输出哪些向量, 也就是哪些code gadget是存在漏洞的(“1”)或不存在漏洞(“0”). 如果一个code gadget存在漏洞, 也就能确定下来目标程序中的漏洞位置.</p>
+<h3 id="步骤5-转化目标程序为code-gadget和向量"><a href="#步骤5-转化目标程序为code-gadget和向量" class="headerlink" title="步骤5 转化目标程序为code gadget和向量"></a>步骤5 转化目标程序为code gadget和向量</h3><ul>
+<li>步骤 5.1: 从目标程序提取库/API函数调用</li>
+<li>步骤 5.2: 根据库/API函数调用的参数提取出程序切片</li>
+<li>步骤 5.3: 将程序切片汇编为code gadget</li>
+<li>步骤 5.4: 转化code gadget对应的符号表示</li>
+<li>步骤 5.5: 将code gadget的符号表示编码为向量</li>
+</ul>
+<h3 id="步骤6-检测"><a href="#步骤6-检测" class="headerlink" title="步骤6 检测"></a>步骤6 检测</h3><p>使用训练好的BLSTM神经网络对目标程序提取得到的code gadget对应的向量进行分类. 如果分类结果是1, 表明存在漏洞, 标记为0, 表明不存在漏洞.</p>
+<h2 id="C-步骤1-提取库-API函数调用和程序切片"><a href="#C-步骤1-提取库-API函数调用和程序切片" class="headerlink" title="C 步骤1 提取库/API函数调用和程序切片"></a>C 步骤1 提取库/API函数调用和程序切片</h2><h3 id="步骤-1-1-提取库-API函数调用"><a href="#步骤-1-1-提取库-API函数调用" class="headerlink" title="步骤 1.1: 提取库/API函数调用"></a>步骤 1.1: 提取库/API函数调用</h3><p>将库/API函数分为两类: 前向和后向. 前向函数调用指那些直接从外部输入(例如, 命令行, 其他程序, socket, 或文件)中接收一个或多个输入的函数调用. 例如 <strong>recv</strong>函数调用就是一个前向函数调用, 因为它直接从socket中接收数据. 后向函数调用就是那些不从程序运行所在的环境中直接接收任何外部输入的函数调用. 例如<strong>strcpy</strong></p>
+<p>对于前向函数调用, 受输入参数影响的语句是危险的, 因为它们有可能因为不合适(精心构造)的参数值而产生漏洞. 对与后向函数调用, 能够影响参数值的语句也是危险的, 因为它可能使得函数调用具有漏洞.</p>
+<h3 id="步骤-1-2-提取程序切片"><a href="#步骤-1-2-提取程序切片" class="headerlink" title="步骤 1.2: 提取程序切片"></a>步骤 1.2: 提取程序切片</h3><p>该步骤生成对应于从目标程序中提取到的库/API函数调用的参数的程序切片. 我们定义两类切片: 前向和后向切片</p>
+<p>前向切片对应于受参数影响的语句, 而后向切片对应于能够影响参数的语句. 我们使用商业软件<strong>CheckMARX</strong>的数据依赖图功能来提取这两类切片. 它的基本思路是如下这样:</p>
+<ul>
+<li>对于每个在前向库/API函数调用中的参数, 会生成一个或多个的前向切片, 而这些前向切片则对应于与参数相关的切片在库/API函数调用时或调用之后进行分支的情况.</li>
+<li>对于每个在后向库/API函数调用中的参数, 会生成一个或多个的后向切片, 而这些后向切片则对应于有多个与参数相关的切片在库/API函数调用时或之前进行合并的情况</li>
+</ul>
+<p>注意. 一个程序切片包含有多个属于不同的用户定义的函数里的语句. 也就是说, 切片可以超出用户定义函数的边界. <strong>Checkmarx</strong>使用chains来表示切片, 但切片是也可以用树进行表示[23], [50], 因为线性结构仅能表示一个独立的切片, 而一个库/API函数调用常常对应于多个切片.</p>
+<h2 id="D-步骤2-提取code-gadget并标记真实值"><a href="#D-步骤2-提取code-gadget并标记真实值" class="headerlink" title="D 步骤2 提取code gadget并标记真实值"></a>D 步骤2 提取code gadget并标记真实值</h2><h3 id="步骤-2-1-将程序切片汇编成code-gadget"><a href="#步骤-2-1-将程序切片汇编成code-gadget" class="headerlink" title="步骤 2.1: 将程序切片汇编成code gadget"></a>步骤 2.1: 将程序切片汇编成code gadget</h3><p>首先, 给定一个库/API函数调用以及对应的程序切片, 我们可以将属于同一个用户定义消息函数的语句, 根据它们在用户定义函数中的出现次序组合成一个片段里(会对语句去重)</p>
+<h3 id="步骤-2-2-标记真实值"><a href="#步骤-2-2-标记真实值" class="headerlink" title="步骤 2.2: 标记真实值"></a>步骤 2.2: 标记真实值</h3><p>每一个code gadget都需要标记为1(存在训练数据集中已知的漏洞)或0(不存在)</p>
+<h2 id="E-步骤3-转化code-gadget为向量"><a href="#E-步骤3-转化code-gadget为向量" class="headerlink" title="E 步骤3 转化code gadget为向量"></a>E 步骤3 转化code gadget为向量</h2><h3 id="步骤-3-1-转化code-gadget为它们的符号表示"><a href="#步骤-3-1-转化code-gadget为它们的符号表示" class="headerlink" title="步骤 3.1 转化code gadget为它们的符号表示"></a>步骤 3.1 转化code gadget为它们的符号表示</h3><p>这一步目的在于启发式地捕获一些程序中的语义信息用于训练神经网络.</p>
+<p>首先, 移除非ASCII字符和注释, 因为这些跟漏洞没有关系.</p>
+<p>然后, 一对一地映射用户定义的变量到符号名(比如, “VAR1”, “VAR2”), 这里需要注意的是, 当变量在不同的code gadget中出现时, 多个变量可以映射到同一个符号名中.</p>
+<p>其次, 一对一地映射用户定义的函数名到符号名(比如: “FUN1”, “FUN2”). 同样, 在不同的code gadget中出现, 多个函数名也可以映射到同一个符号名中.</p>
+<h3 id="步骤-3-2-将符号表示编码为向量"><a href="#步骤-3-2-将符号表示编码为向量" class="headerlink" title="步骤 3.2: 将符号表示编码为向量"></a>步骤 3.2: 将符号表示编码为向量</h3><p>我们将code gadget的符号表示经过词法分析拆分成token序列, 包括标识符, 关键字, 运算符, 和符号.</p>
+<p>例如 <strong>strcpy(VAR5, VAR2);</strong>可以由7个token进行表示</p>
+<pre class=" language-bash"><code class="language-bash"><span class="token string">"strcpy"</span>, <span class="token string">"("</span>, <span class="token string">"VAR5"</span>, <span class="token string">","</span>, <span class="token string">"VAR2"</span>, <span class="token string">")"</span>, <span class="token string">";"</span></code></pre>
+<p>这样可以得到大量的token. 为了将这些token转换成向量, 我们使用<strong>word2vec</strong>(广泛用于文本挖掘)工具[14]. 该工具基于词向量(distributed representation), 这是一种将token映射成一个整型数(这个整型数会在随后转换成固定长度的向量)的想法</p>
+<p>因为code gadget也许含有不同数量的token, 对应的向量也就会有这不同的长度. 因为BLSTM值接收等长向量作为输入, 因此我们需要作出调整. 为了达到这个目的, 我们引入了一个参数 $\tau$ 作为对应于code gadget的固定长度的向量</p>
+<ul>
+<li>当一个向量短于 $\tau$ , 会有两种情况: 如果code gadget由后向切片生成, 或是由多个后向切片组合而成, 那么我们就会在向量的首部填充0, 否则在向量的尾部填充0</li>
+<li>当向量长于 $\tau$ , 也有两种情况: 如果code gadget由后向切片生成, 或由多个后向切片组合而成, 我们会删去向量的首部, 否则删除向量的尾部.</li>
+</ul>
+<p>这能够确保每一个由后向切片生成的code gadget的最后一个语句是一个库/API函数调用, 而每一个由前向切片生成的code gadget则也是一个库/API函数调用. 结果就是, 每一个code gadget都由一个 $\tau-bits$的向量表示. 向量的长度与BLSTM每一层的隐藏结点数量有关, 这也是一个可以调整的参数来提高漏洞检测的准确率.</p>
+</p></div><div class="share"><span>分享到</span>&nbsp;<span class="soc"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></span><span class="soc"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></span><span class="soc"><a href="http://twitter.com/home?status=https://vancir.github.io/brief-intro-to-vuldeepecker.html%20Vancir%20论文: VulDeePecker基于深度学习的漏洞检测系统" class="fa fa-twitter"></a></span></div><div class="pagination"><p class="clearfix"><span class="pre pagbuttons"><a role="navigation" href="/klee-seed-mode.html" title="KLEE中Seed模式流程解析"><i class="fa fa-angle-double-left"></i>&nbsp;上一篇: KLEE中Seed模式流程解析</a></span><span>&nbsp;</span><span class="next pagbuttons"><a role="navigation" href="/how-to-detect-android-emulator.html" title="检测Android虚拟机的方法和代码实现">下一篇: 检测Android虚拟机的方法和代码实现&nbsp;<i class="fa fa-angle-double-right"></i></a></span></p></div></div></div></div><div class="visible-xs site-bottom-footer"><footer><p>&copy;&nbsp;2020&nbsp;<a target="_blank" href="https://vancir.github.io" rel="noopener noreferrer">Vancir</a></p><p>Theme&nbsp;<a target="_blank" href="https://github.com/SumiMakito/hexo-theme-typography" rel="noopener noreferrer">Typography</a>&nbsp;by&nbsp;<a target="_blank" href="https://www.keep.moe" rel="noopener noreferrer">Makito</a></p><p>Proudly published with&nbsp;<a target="_blank" href="https://hexo.io" rel="noopener noreferrer">Hexo</a></p></footer></div></div></div></div><script src="/js/jquery-3.1.0.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script><script src="/js/google-analytics.js"></script><script src="/js/typography.js"></script></body></html>

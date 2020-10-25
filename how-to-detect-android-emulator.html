@@ -1,0 +1,479 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="Vancir"><title>检测Android虚拟机的方法和代码实现 · Vancir</title><meta name="description" content="刚刚看了一些关于Detect Android Emulator的开源项目/文章/论文, 我看的这些其实都是13年14年提出的方法, 方法里大多是检测一些环境属性, 检查一些文件这样, 但实际上检测的思路并不局限于此. 有的是很直接了当去检测qemu, 而其它的方法则是旁敲侧击比如检测adb, 检测p"><meta name="keywords" content=""><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="stylesheet" href="/css/style.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"><meta name="generator" content="Hexo 4.2.1"><link rel="stylesheet" href="/css/prism-dracula.css" type="text/css"></head><body><div id="stage" class="container"><div class="row"><div id="side-bar" class="col-sm-3 col-xs-12 side-container invisible"><div class="vertical-text site-title"><h3 tabindex="-1" class="site-title-small"><a href="/" class="a-title">Que sera sera</a></h3><h1 tabindex="-1" class="site-title-large"><a href="/" class="a-title">静言思之</a></h1><!--h6(onclick="triggerSiteNav()") Trigger--></div><br class="visible-lg visible-md visible-sm"><div id="site-nav" class="site-title-links"><ul><li><a href="/">回到原来</a></li><li><a href="/archives">文章归档</a></li><li><a href="/misc/aboutme.html">关于作者</a></li><li><a href="/misc/opensource.html">开源项目</a></li><li class="soc"><a href="https://github.com/vancir" target="_blank" rel="noopener noreferrer"><i class="fa fa-github">&nbsp;</i></a><a href="https://twitter.com/Vancirprince" target="_blank" rel="noopener noreferrer"><i class="fa fa-twitter">&nbsp;</i></a><a href="http://weibo.com/u/5226074301" target="_blank" rel="noopener noreferrer"><i class="fa fa-weibo">&nbsp;</i></a><a href="https://vancir.github.io/atom.xml" target="_blank" rel="noopener noreferrer"><i class="fa fa-rss">&nbsp;</i></a></li></ul><div class="visible-lg visible-md visible-sm site-nav-footer"><br class="site-nav-footer-br"><footer><p>&copy;&nbsp;2020&nbsp;<a target="_blank" href="https://vancir.github.io" rel="noopener noreferrer">Vancir</a></p><p>Theme&nbsp;<a target="_blank" href="https://github.com/SumiMakito/hexo-theme-typography" rel="noopener noreferrer">Typography</a>&nbsp;by&nbsp;<a target="_blank" href="https://www.keep.moe" rel="noopener noreferrer">Makito</a></p><p>Proudly published with&nbsp;<a target="_blank" href="https://hexo.io" rel="noopener noreferrer">Hexo</a></p></footer></div></div></div><div id="main-container" class="col-sm-9 col-xs-12 main-container invisible"><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post-container"><p class="post-title"><a>检测Android虚拟机的方法和代码实现</a></p><p class="post-meta"><span class="date meta-item">发布于&nbsp;2018-04-04</span></p><p class="post-abstract"><p>刚刚看了一些关于Detect Android Emulator的开源项目/文章/论文, 我看的这些其实都是13年14年提出的方法, 方法里大多是检测一些环境属性, 检查一些文件这样, 但实际上检测的思路并不局限于此. 有的是很直接了当去检测qemu, 而其它的方法则是旁敲侧击比如检测adb, 检测ptrace之类的. 思路也很灵活. 最后看到有提出通过利用QEMU这样的模拟CPU与物理CPU之间的实际差异(任务调度差异), 模拟传感器和物理传感器的差异, 缓存的差异等方法来检测. 相比检测环境属性, 检测效果会提升很多. </p>
+<p>下面我就列出各个资料中所提出的一些方法/思路/代码供大家交流学习.</p>
+<h2 id="QEMU-Properties"><a href="#QEMU-Properties" class="headerlink" title="QEMU Properties"></a>QEMU Properties</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Property</span> <span class="token punctuation">{</span>
+    <span class="token keyword">public</span> String name<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> String seek_value<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token function">Property</span><span class="token punctuation">(</span>String name<span class="token punctuation">,</span> String seek_value<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">=</span> name<span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>seek_value <span class="token operator">=</span> seek_value<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token comment" spellcheck="true">/** 
+ * 已知属性, 格式为 [属性名, 属性值], 用于判定当前是否为QEMU环境
+ */</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> Property<span class="token punctuation">[</span><span class="token punctuation">]</span> known_props <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"init.svc.qemud"</span><span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"init.svc.qemu-props"</span><span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"qemu.hw.mainkeys"</span><span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"qemu.sf.fake_camera"</span><span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"qemu.sf.lcd_density"</span><span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"ro.bootloader"</span><span class="token punctuation">,</span> <span class="token string">"unknown"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"ro.bootmode"</span><span class="token punctuation">,</span> <span class="token string">"unknown"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"ro.hardware"</span><span class="token punctuation">,</span> <span class="token string">"goldfish"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"ro.kernel.android.qemud"</span><span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"ro.kernel.qemu.gles"</span><span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"ro.kernel.qemu"</span><span class="token punctuation">,</span> <span class="token string">"1"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"ro.product.device"</span><span class="token punctuation">,</span> <span class="token string">"generic"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"ro.product.model"</span><span class="token punctuation">,</span> <span class="token string">"sdk"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"ro.product.name"</span><span class="token punctuation">,</span> <span class="token string">"sdk"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token keyword">new</span> <span class="token class-name">Property</span><span class="token punctuation">(</span><span class="token string">"ro.serialno"</span><span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">/**
+ * 一个阈值, 因为所谓"已知"的模拟器属性并不完全准确, 有可能出现假阳性结果, 因此保持一定的阈值能让检测效果更好
+ */</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">int</span> MIN_PROPERTIES_THRESHOLD <span class="token operator">=</span> <span class="token number">0x5</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">/**
+ * 尝试通过查询指定的系统属性来检测QEMU环境, 最后跟阈值比较得出检测结果.
+ *
+ * @param context A {link Context} object for the Android application.
+ * @return {@code true} if enough properties where found to exist or {@code false} if not.
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">hasQEmuProps</span><span class="token punctuation">(</span>Context context<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">int</span> found_props <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>Property property <span class="token operator">:</span> known_props<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        String property_value <span class="token operator">=</span> Utilities<span class="token punctuation">.</span><span class="token function">getProp</span><span class="token punctuation">(</span>context<span class="token punctuation">,</span> property<span class="token punctuation">.</span>name<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">// See if we expected just a non-null</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>property<span class="token punctuation">.</span>seek_value <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>property_value <span class="token operator">!=</span> null<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            found_props<span class="token operator">++</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment" spellcheck="true">// See if we expected a value to seek</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>property<span class="token punctuation">.</span>seek_value <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>property_value<span class="token punctuation">.</span><span class="token function">indexOf</span><span class="token punctuation">(</span>property<span class="token punctuation">.</span>seek_value<span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            found_props<span class="token operator">++</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>found_props <span class="token operator">>=</span> MIN_PROPERTIES_THRESHOLD<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>这些都是基于一些经验和特征来比对的属性, 这里的属性以及之后的一些文件呀属性啊之类的我就不再多作解释. </p>
+<h2 id="Device-ID"><a href="#Device-ID" class="headerlink" title="Device ID"></a>Device ID</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> known_device_ids <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"000000000000000"</span><span class="token punctuation">,</span> <span class="token comment" spellcheck="true">// Default emulator id</span>
+        <span class="token string">"e21833235b6eef10"</span><span class="token punctuation">,</span> <span class="token comment" spellcheck="true">// VirusTotal id</span>
+        <span class="token string">"012345678912345"</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasKnownDeviceId</span><span class="token punctuation">(</span>Context context<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    TelephonyManager telephonyManager <span class="token operator">=</span> <span class="token punctuation">(</span>TelephonyManager<span class="token punctuation">)</span> context<span class="token punctuation">.</span><span class="token function">getSystemService</span><span class="token punctuation">(</span>Context<span class="token punctuation">.</span>TELEPHONY_SERVICE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    String deviceId <span class="token operator">=</span> telephonyManager<span class="token punctuation">.</span><span class="token function">getDeviceId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>String known_deviceId <span class="token operator">:</span> known_device_ids<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>known_deviceId<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span>deviceId<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2 id="Default-Number"><a href="#Default-Number" class="headerlink" title="Default Number"></a>Default Number</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> known_numbers <span class="token operator">=</span> <span class="token punctuation">{</span>
+        <span class="token string">"15555215554"</span><span class="token punctuation">,</span> <span class="token comment" spellcheck="true">// 模拟器默认电话号码 + VirusTotal</span>
+        <span class="token string">"15555215556"</span><span class="token punctuation">,</span> <span class="token string">"15555215558"</span><span class="token punctuation">,</span> <span class="token string">"15555215560"</span><span class="token punctuation">,</span> <span class="token string">"15555215562"</span><span class="token punctuation">,</span> <span class="token string">"15555215564"</span><span class="token punctuation">,</span> <span class="token string">"15555215566"</span><span class="token punctuation">,</span>
+        <span class="token string">"15555215568"</span><span class="token punctuation">,</span> <span class="token string">"15555215570"</span><span class="token punctuation">,</span> <span class="token string">"15555215572"</span><span class="token punctuation">,</span> <span class="token string">"15555215574"</span><span class="token punctuation">,</span> <span class="token string">"15555215576"</span><span class="token punctuation">,</span> <span class="token string">"15555215578"</span><span class="token punctuation">,</span>
+        <span class="token string">"15555215580"</span><span class="token punctuation">,</span> <span class="token string">"15555215582"</span><span class="token punctuation">,</span> <span class="token string">"15555215584"</span><span class="token punctuation">,</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasKnownPhoneNumber</span><span class="token punctuation">(</span>Context context<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    TelephonyManager telephonyManager <span class="token operator">=</span> <span class="token punctuation">(</span>TelephonyManager<span class="token punctuation">)</span> context<span class="token punctuation">.</span><span class="token function">getSystemService</span><span class="token punctuation">(</span>Context<span class="token punctuation">.</span>TELEPHONY_SERVICE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    String phoneNumber <span class="token operator">=</span> telephonyManager<span class="token punctuation">.</span><span class="token function">getLine1Number</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>String number <span class="token operator">:</span> known_numbers<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>number<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span>phoneNumber<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2 id="IMSI"><a href="#IMSI" class="headerlink" title="IMSI"></a>IMSI</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> known_imsi_ids <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"310260000000000"</span> <span class="token comment" spellcheck="true">// 默认IMSI编号</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasKnownImsi</span><span class="token punctuation">(</span>Context context<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    TelephonyManager telephonyManager <span class="token operator">=</span> <span class="token punctuation">(</span>TelephonyManager<span class="token punctuation">)</span> context<span class="token punctuation">.</span><span class="token function">getSystemService</span><span class="token punctuation">(</span>Context<span class="token punctuation">.</span>TELEPHONY_SERVICE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    String imsi <span class="token operator">=</span> telephonyManager<span class="token punctuation">.</span><span class="token function">getSubscriberId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>String known_imsi <span class="token operator">:</span> known_imsi_ids<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>known_imsi<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span>imsi<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2 id="Build类"><a href="#Build类" class="headerlink" title="Build类"></a>Build类</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasEmulatorBuild</span><span class="token punctuation">(</span>Context context<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    String BOARD <span class="token operator">=</span> android<span class="token punctuation">.</span>os<span class="token punctuation">.</span>Build<span class="token punctuation">.</span>BOARD<span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// The name of the underlying board, like "unknown".</span>
+    <span class="token comment" spellcheck="true">// This appears to occur often on real hardware... that's sad</span>
+    <span class="token comment" spellcheck="true">// String BOOTLOADER = android.os.Build.BOOTLOADER; // The system bootloader version number.</span>
+    String BRAND <span class="token operator">=</span> android<span class="token punctuation">.</span>os<span class="token punctuation">.</span>Build<span class="token punctuation">.</span>BRAND<span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// The brand (e.g., carrier) the software is customized for, if any.</span>
+    <span class="token comment" spellcheck="true">// "generic"</span>
+    String DEVICE <span class="token operator">=</span> android<span class="token punctuation">.</span>os<span class="token punctuation">.</span>Build<span class="token punctuation">.</span>DEVICE<span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// The name of the industrial design. "generic"</span>
+    String HARDWARE <span class="token operator">=</span> android<span class="token punctuation">.</span>os<span class="token punctuation">.</span>Build<span class="token punctuation">.</span>HARDWARE<span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// The name of the hardware (from the kernel command line or</span>
+    <span class="token comment" spellcheck="true">// /proc). "goldfish"</span>
+    String MODEL <span class="token operator">=</span> android<span class="token punctuation">.</span>os<span class="token punctuation">.</span>Build<span class="token punctuation">.</span>MODEL<span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// The end-user-visible name for the end product. "sdk"</span>
+    String PRODUCT <span class="token operator">=</span> android<span class="token punctuation">.</span>os<span class="token punctuation">.</span>Build<span class="token punctuation">.</span>PRODUCT<span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// The name of the overall product.</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>BOARD<span class="token punctuation">.</span><span class="token function">compareTo</span><span class="token punctuation">(</span><span class="token string">"unknown"</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token comment" spellcheck="true">/* || (BOOTLOADER.compareTo("unknown") == 0) */</span>
+            <span class="token operator">||</span> <span class="token punctuation">(</span>BRAND<span class="token punctuation">.</span><span class="token function">compareTo</span><span class="token punctuation">(</span><span class="token string">"generic"</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token punctuation">(</span>DEVICE<span class="token punctuation">.</span><span class="token function">compareTo</span><span class="token punctuation">(</span><span class="token string">"generic"</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span>
+            <span class="token operator">||</span> <span class="token punctuation">(</span>MODEL<span class="token punctuation">.</span><span class="token function">compareTo</span><span class="token punctuation">(</span><span class="token string">"sdk"</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token punctuation">(</span>PRODUCT<span class="token punctuation">.</span><span class="token function">compareTo</span><span class="token punctuation">(</span><span class="token string">"sdk"</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span>
+            <span class="token operator">||</span> <span class="token punctuation">(</span>HARDWARE<span class="token punctuation">.</span><span class="token function">compareTo</span><span class="token punctuation">(</span><span class="token string">"goldfish"</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2 id="运营商名"><a href="#运营商名" class="headerlink" title="运营商名"></a>运营商名</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">isOperatorNameAndroid</span><span class="token punctuation">(</span>Context paramContext<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    String szOperatorName <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>TelephonyManager<span class="token punctuation">)</span> paramContext<span class="token punctuation">.</span><span class="token function">getSystemService</span><span class="token punctuation">(</span>Context<span class="token punctuation">.</span>TELEPHONY_SERVICE<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getNetworkOperatorName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">boolean</span> isAndroid <span class="token operator">=</span> szOperatorName<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span><span class="token string">"android"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> isAndroid<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2 id="QEMU驱动"><a href="#QEMU驱动" class="headerlink" title="QEMU驱动"></a>QEMU驱动</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> known_qemu_drivers <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"goldfish"</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">/**
+ * 读取驱动文件, 检查是否包含已知的qemu驱动
+ *
+ * @return {@code true} if any known drivers where found to exist or {@code false} if not.
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasQEmuDrivers</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>File drivers_file <span class="token operator">:</span> <span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{</span><span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">(</span><span class="token string">"/proc/tty/drivers"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">(</span><span class="token string">"/proc/cpuinfo"</span><span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>drivers_file<span class="token punctuation">.</span><span class="token function">exists</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> drivers_file<span class="token punctuation">.</span><span class="token function">canRead</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">// We don't care to read much past things since info we care about should be inside here</span>
+            <span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span> data <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">byte</span><span class="token punctuation">[</span><span class="token number">1024</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token keyword">try</span> <span class="token punctuation">{</span>
+                InputStream is <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FileInputStream</span><span class="token punctuation">(</span>drivers_file<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                is<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                is<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> exception<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                exception<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            String driver_data <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span>String known_qemu_driver <span class="token operator">:</span> FindEmulator<span class="token punctuation">.</span>known_qemu_drivers<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>driver_data<span class="token punctuation">.</span><span class="token function">indexOf</span><span class="token punctuation">(</span>known_qemu_driver<span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2 id="QEMU文件"><a href="#QEMU文件" class="headerlink" title="QEMU文件"></a>QEMU文件</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> known_files <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"/system/lib/libc_malloc_debug_qemu.so"</span><span class="token punctuation">,</span> <span class="token string">"/sys/qemu_trace"</span><span class="token punctuation">,</span>
+        <span class="token string">"/system/bin/qemu-props"</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">/**
+ * 检查是否存在已知的QEMU环境文件
+ *
+ * @return {@code true} if any files where found to exist or {@code false} if not.
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasQEmuFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>String pipe <span class="token operator">:</span> known_files<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        File qemu_file <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">(</span>pipe<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>qemu_file<span class="token punctuation">.</span><span class="token function">exists</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2 id="Genymotion文件"><a href="#Genymotion文件" class="headerlink" title="Genymotion文件"></a>Genymotion文件</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> known_geny_files <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"/dev/socket/genyd"</span><span class="token punctuation">,</span> <span class="token string">"/dev/socket/baseband_genyd"</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">/**
+ * 检查是否存在已知的Genemytion环境文件
+ *
+ * @return {@code true} if any files where found to exist or {@code false} if not.
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasGenyFiles</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>String file <span class="token operator">:</span> known_geny_files<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        File geny_file <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">(</span>file<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>geny_file<span class="token punctuation">.</span><span class="token function">exists</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2 id="QEMU管道"><a href="#QEMU管道" class="headerlink" title="QEMU管道"></a>QEMU管道</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> known_pipes <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"/dev/socket/qemud"</span><span class="token punctuation">,</span> <span class="token string">"/dev/qemu_pipe"</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">/**
+ * 检查是否存在已知的QEMU使用的管道
+ *
+ * @return {@code true} if any pipes where found to exist or {@code false} if not.
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasPipes</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>String pipe <span class="token operator">:</span> known_pipes<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        File qemu_socket <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">(</span>pipe<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>qemu_socket<span class="token punctuation">.</span><span class="token function">exists</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2 id="设置断点"><a href="#设置断点" class="headerlink" title="设置断点"></a>设置断点</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">static</span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// This is only valid for arm</span>
+    System<span class="token punctuation">.</span><span class="token function">loadLibrary</span><span class="token punctuation">(</span><span class="token string">"anti"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">public</span> <span class="token keyword">native</span> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">qemuBkpt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">checkQemuBreakpoint</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">boolean</span> hit_breakpoint <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// Potentially you may want to see if this is a specific value</span>
+    <span class="token keyword">int</span> result <span class="token operator">=</span> <span class="token function">qemuBkpt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>result <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        hit_breakpoint <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">return</span> hit_breakpoint<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>以下是对应的c++代码</p>
+<pre class=" language-c++"><code class="language-c++">void handler_sigtrap(int signo) {
+  exit(-1);
+}
+
+void handler_sigbus(int signo) {
+  exit(-1);
+}
+
+int setupSigTrap() {
+  // BKPT throws SIGTRAP on nexus 5 / oneplus one (and most devices)
+  signal(SIGTRAP, handler_sigtrap);
+  // BKPT throws SIGBUS on nexus 4
+  signal(SIGBUS, handler_sigbus);
+}
+
+// This will cause a SIGSEGV on some QEMU or be properly respected
+int tryBKPT() {
+  __asm__ __volatile__ ("bkpt 255");
+}
+
+jint Java_diff_strazzere_anti_emulator_FindEmulator_qemuBkpt(JNIEnv* env, jobject jObject) {
+
+  pid_t child = fork();
+  int child_status, status = 0;
+
+  if(child == 0) {
+    setupSigTrap();
+    tryBKPT();
+  } else if(child == -1) {
+    status = -1;
+  } else {
+
+    int timeout = 0;
+    int i = 0;
+    while ( waitpid(child, &child_status, WNOHANG) == 0 ) {
+      sleep(1);
+      // Time could be adjusted here, though in my experience if the child has not returned instantly
+      // then something has gone wrong and it is an emulated device
+      if(i++ == 1) {
+        timeout = 1;
+        break;
+      }
+    }
+
+    if(timeout == 1) {
+      // Process timed out - likely an emulated device and child is frozen
+      status = 1;
+    }
+
+    if ( WIFEXITED(child_status) ) {
+      // 子进程正常退出
+      status = 0;
+    } else {
+      // Didn't exit properly - very likely an emulator
+      status = 2;
+    }
+
+    // Ensure child is dead
+    kill(child, SIGKILL);
+  }
+
+  return status;
+}</code></pre>
+<p>这里我的描述可能并不准确, 因为并没有找到相关的资料. 我只能以自己的理解来解释一下: </p>
+<p><strong>SIGTRAP</strong>是调试器设置断点时发生的信号, 在nexus5或一加手机等大多数手机都可以触发. <strong>SIGBUS</strong>则是在一个总线错误, 指针也许访问了一个有效地址, 但总线会因为数据未对齐等原因无法使用, 在nexus4手机上可以触发. 而<strong>bkpt</strong>则是arm的断点指令, 这是曾经qemu被提出来的一个issue, qemu会因为<strong>SIGSEGV</strong>信号而崩溃, 作者想利用这个崩溃来检测qemu. 如果程序没有正常退出或被冻结, 那么就可以认定很可能是在模拟器里. </p>
+<h2 id="ADB"><a href="#ADB" class="headerlink" title="ADB"></a>ADB</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasEmulatorAdb</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> FindDebugger<span class="token punctuation">.</span><span class="token function">hasAdbInEmulator</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> exception<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        exception<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<h2 id="isUserAMonkey"><a href="#isUserAMonkey" class="headerlink" title="isUserAMonkey()"></a>isUserAMonkey()</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">isUserAMonkey</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> ActivityManager<span class="token punctuation">.</span><span class="token function">isUserAMonkey</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>这个其实是用于检测当前操作到底是用户还是脚本在要求应用执行. </p>
+<h2 id="isDebuggerConnected"><a href="#isDebuggerConnected" class="headerlink" title="isDebuggerConnected()"></a>isDebuggerConnected()</h2><pre class=" language-java"><code class="language-java"><span class="token comment" spellcheck="true">/**
+ * 你信或不信, 还真有许多加固程序使用这个方法...
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">isBeingDebugged</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> Debug<span class="token punctuation">.</span><span class="token function">isDebuggerConnected</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>这个方法是用来检测调试, 判断是否有调试器连接. </p>
+<h2 id="ptrace"><a href="#ptrace" class="headerlink" title="ptrace"></a>ptrace</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> String tracerpid <span class="token operator">=</span> <span class="token string">"TracerPid"</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">/**
+ * 阿里巴巴用于检测是否在跟踪应用进程
+ * 
+ * 容易规避, 用法是创建一个线程每3秒检测一次, 如果检测到则程序崩溃
+ * 
+ * @return
+ * @throws IOException
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasTracerPid</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> IOException <span class="token punctuation">{</span>
+    BufferedReader reader <span class="token operator">=</span> null<span class="token punctuation">;</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        reader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedReader</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">InputStreamReader</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">FileInputStream</span><span class="token punctuation">(</span><span class="token string">"/proc/self/status"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">1000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String line<span class="token punctuation">;</span>
+
+        <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>line <span class="token operator">=</span> reader<span class="token punctuation">.</span><span class="token function">readLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>line<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">></span> tracerpid<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>line<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> tracerpid<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span>tracerpid<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>Integer<span class="token punctuation">.</span><span class="token function">decode</span><span class="token punctuation">(</span>line<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span>tracerpid<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                    <span class="token keyword">break</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> exception<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        exception<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{</span>
+        reader<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>这个方法是通过检查 <strong>/proc/self/status</strong>的<strong>TracerPid</strong>项, 这个项在没有跟踪的时候默认为0, 当有程序在跟踪时会修改为对应的pid. 因此如果<strong>TracerPid</strong>不等于0, 那么就可以认为是在模拟器环境. </p>
+<h2 id="TCP连接"><a href="#TCP连接" class="headerlink" title="TCP连接"></a>TCP连接</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasAdbInEmulator</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> IOException <span class="token punctuation">{</span>
+    <span class="token keyword">boolean</span> adbInEmulator <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+    BufferedReader reader <span class="token operator">=</span> null<span class="token punctuation">;</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        reader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedReader</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">InputStreamReader</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">FileInputStream</span><span class="token punctuation">(</span><span class="token string">"/proc/net/tcp"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">1000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String line<span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">// Skip column names</span>
+        reader<span class="token punctuation">.</span><span class="token function">readLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        ArrayList<span class="token operator">&lt;</span>tcp<span class="token operator">></span> tcpList <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token operator">&lt;</span>tcp<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>line <span class="token operator">=</span> reader<span class="token punctuation">.</span><span class="token function">readLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            tcpList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>tcp<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span>line<span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span><span class="token string">"\\W+"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        reader<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment" spellcheck="true">// Adb is always bounce to 0.0.0.0 - though the port can change</span>
+        <span class="token comment" spellcheck="true">// real devices should be != 127.0.0.1</span>
+        <span class="token keyword">int</span> adbPort <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span>tcp tcpItem <span class="token operator">:</span> tcpList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>tcpItem<span class="token punctuation">.</span>localIp <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                adbPort <span class="token operator">=</span> tcpItem<span class="token punctuation">.</span>localPort<span class="token punctuation">;</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>adbPort <span class="token operator">!=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span>tcp tcpItem <span class="token operator">:</span> tcpList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>tcpItem<span class="token punctuation">.</span>localIp <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>tcpItem<span class="token punctuation">.</span>localPort <span class="token operator">==</span> adbPort<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    adbInEmulator <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> exception<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        exception<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{</span>
+        reader<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">return</span> adbInEmulator<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">tcp</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">int</span> id<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">long</span> localIp<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> localPort<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> remoteIp<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> remotePort<span class="token punctuation">;</span>
+
+    <span class="token keyword">static</span> tcp <span class="token function">create</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> params<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">tcp</span><span class="token punctuation">(</span>params<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">5</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">6</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">7</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">8</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                        params<span class="token punctuation">[</span><span class="token number">9</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">10</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">11</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">12</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">13</span><span class="token punctuation">]</span><span class="token punctuation">,</span> params<span class="token punctuation">[</span><span class="token number">14</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token function">tcp</span><span class="token punctuation">(</span>String id<span class="token punctuation">,</span> String localIp<span class="token punctuation">,</span> String localPort<span class="token punctuation">,</span> String remoteIp<span class="token punctuation">,</span> String remotePort<span class="token punctuation">,</span> String state<span class="token punctuation">,</span>
+                    String tx_queue<span class="token punctuation">,</span> String rx_queue<span class="token punctuation">,</span> String tr<span class="token punctuation">,</span> String tm_when<span class="token punctuation">,</span> String retrnsmt<span class="token punctuation">,</span> String uid<span class="token punctuation">,</span>
+                    String timeout<span class="token punctuation">,</span> String inode<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>id <span class="token operator">=</span> Integer<span class="token punctuation">.</span><span class="token function">parseInt</span><span class="token punctuation">(</span>id<span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>localIp <span class="token operator">=</span> Long<span class="token punctuation">.</span><span class="token function">parseLong</span><span class="token punctuation">(</span>localIp<span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>localPort <span class="token operator">=</span> Integer<span class="token punctuation">.</span><span class="token function">parseInt</span><span class="token punctuation">(</span>localPort<span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这个方法是通过读取 <strong>/proc/net/tcp</strong>的信息来判断是否存在adb. 比如真机的的信息为<strong>0: 4604D20A:B512 A3D13AD8…</strong>, 而模拟器上的对应信息就是<strong>0: 00000000:0016 00000000:0000</strong>, 因为adb通常是反射到<strong>0.0.0.0</strong>这个ip上, 虽然端口有可能改变, 但确实是可行的. </p>
+<h2 id="TaintDroid"><a href="#TaintDroid" class="headerlink" title="TaintDroid"></a>TaintDroid</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasPackageNameInstalled</span><span class="token punctuation">(</span>Context context<span class="token punctuation">,</span> String packageName<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    PackageManager packageManager <span class="token operator">=</span> context<span class="token punctuation">.</span><span class="token function">getPackageManager</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// In theory, if the package installer does not throw an exception, package exists</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        packageManager<span class="token punctuation">.</span><span class="token function">getInstallerPackageName</span><span class="token punctuation">(</span>packageName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IllegalArgumentException</span> exception<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasAppAnalysisPackage</span><span class="token punctuation">(</span>Context context<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> Utilities<span class="token punctuation">.</span><span class="token function">hasPackageNameInstalled</span><span class="token punctuation">(</span>context<span class="token punctuation">,</span> <span class="token string">"org.appanalysis"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasTaintClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        Class<span class="token punctuation">.</span><span class="token function">forName</span><span class="token punctuation">(</span><span class="token string">"dalvik.system.Taint"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">ClassNotFoundException</span> exception<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>这个比较单纯了. 就是通过检测包名, 检测<strong>Taint</strong>类来判断是否安装有<strong>TaintDroid</strong>这个污点分析工具. 另外也还可以检测<strong>TaintDroid</strong>的一些成员变量. </p>
+<h2 id="eth0"><a href="#eth0" class="headerlink" title="eth0"></a>eth0</h2><pre class=" language-java"><code class="language-java"><span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">hasEth0Interface</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span>Enumeration<span class="token operator">&lt;</span>NetworkInterface<span class="token operator">></span> en <span class="token operator">=</span> NetworkInterface<span class="token punctuation">.</span><span class="token function">getNetworkInterfaces</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> en<span class="token punctuation">.</span><span class="token function">hasMoreElements</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            NetworkInterface intf <span class="token operator">=</span> en<span class="token punctuation">.</span><span class="token function">nextElement</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>intf<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">"eth0"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">SocketException</span> ex<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>检测是否存在<strong>eth0</strong>网卡. </p>
+<h2 id="传感器"><a href="#传感器" class="headerlink" title="传感器"></a>传感器</h2><p>手机上配备了各式各样的传感器, 但它们实质上都是基于从环境收集的信息输出值, 因此想要模拟传感器是非常具有挑战性的. 这些传感器为识别手机和模拟器提供了新的机会. </p>
+<p>比如在论文<strong>Rage Against the Virtual Machine: Hindering Dynamic Analysis of Android Malware</strong>中, 作者对Android模拟器的加速器进行测试, 作者发现Android模拟器上的传感器会在相同的时间间隔内(观测结果是0.8s, 标准偏差为0.003043)产生相同的值. 显然对于现实世界的传感器, 这是不可能的. </p>
+<p><img src="http://od7mpc53s.bkt.clouddn.com/anti-emu-acc-cdf.png" alt="acc-cdf.png"></p>
+<p>于是我们可以先注册一个传感器监听器, 如果注册失败, 就可能是在模拟器中(排除实际设备不支持传感器的可能性). 如果注册成功, 那么检查<strong>onSensorChanged</strong>回调方法, 如果在连续调用这个方法的过程所观察到的传感器值或时间间隔相同, 那么就可以认定是在模拟器环境中.</p>
+<h2 id="QEMU任务调度"><a href="#QEMU任务调度" class="headerlink" title="QEMU任务调度"></a>QEMU任务调度</h2><p>出于性能优化的原因, QEMU在每次执行指令时都不会主动更新程序计数器(PC), 由于翻译指令在本地执行, 而增加PC需要额外的指令带来开销. 所以QEMU只在执行那些从线性执行过程里中断的指令(例如分支指令)时才会更新程序计数器. 这也就导致在执行一些基本块的期间如果发生了调度事件, 那么也没有办法恢复调度前的PC, 也是出于这个原因, QEMU仅在执行基本块后才发生调度事件, 绝不会执行的过程中发生. </p>
+<p><img src="http://od7mpc53s.bkt.clouddn.com/anti-emu-sche-point.png" alt="sche-point.png"></p>
+<p>如上图, 因为调度可能在任意时间发生, 所以在非模拟器环境下, 会观察到大量的调度点. 而在模拟器环境中, 只能看到特定的调度点. </p>
+<h2 id="SMC识别"><a href="#SMC识别" class="headerlink" title="SMC识别"></a>SMC识别</h2><p>因为QEMU会跟踪代码页的改动, 于是存在一种新颖的方法来检测QEMU–使用自修改代码(Self-Modifying Code, SMC)引起模拟器和实际设备之间的执行流变化. </p>
+<p><img src="http://od7mpc53s.bkt.clouddn.com/anti-emu-memory.png" alt="memory.png"></p>
+<p>ARM处理器包含有两个不同的缓冲Cache, 一个用于指令访问(I-Cache), 而另一个用于数据访问(D-Cache). 但如ARM这样的哈佛架构并不能保证I-Cache和D-Cache之间的一致性. 因此CPU有可能在新代码片已经写入主存后执行旧的代码片(也许是无效的). </p>
+<p>这个问题可以通过强迫两个缓存一致得到解决, 这有两步:</p>
+<ol>
+<li>清理主存, 以便将D-Cache中新写入的代码移入主存</li>
+<li>使I-Cache无效, 以便它可以用主存的新内容重新填充. </li>
+</ol>
+<p>在原生Android代码中, 可以使用<strong>cacheflush</strong>函数, 该函数通过系统调用完成上述操作. </p>
+<p><img src="http://od7mpc53s.bkt.clouddn.com/anti-emu-diff.png" alt="diff.png"></p>
+<p>识别代码, 使用一个具有读写权限的内存, 其中包含两个不同函数f1和f2的代码, 这两个函数其实很简单, 只是单纯在一个全局字符串变量的末尾附加各自的函数名称, 这两个函数会在循环里交错执行, 这样就可以通过结果的字符串推断出函数调用序列. </p>
+<p>如前所述, 我们调用<strong>cacheflush</strong>来同步缓存. 在实际设备和模拟器上运行代码得到的结果是相同的–每次执行都会产生一致的函数调用序列. </p>
+<p>接下来我们移除调用<strong>cacheflush</strong>, 执行相同的操作. 那么在实际设备中, 我们每次运行都会观察到一个随机的函数调用序列, 这也如前所述的那样, 因为I-Cache可能包含一些旧指令, 每次调用的时候缓存都不同步所导致的. </p>
+<p>而模拟器环境却不会发生这样的情况, 而且函数调用序列会跟之前没有移除<strong>cacheflush</strong>时完全相同, 也就是每次函数调用前缓存都是一致的. 这是因为QEMU会跟踪代码页上的修改, 并确保生成的代码始终与内存中的目标指令匹配, 因此QEMU会放弃之前版本的代码翻译并重新生成新代码. </p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>看到这里会不会已经觉得检测方法够多了. 可是我还只是看了13年14年的资料. 有关近几年的资料还未涉及. </p>
+<p>最后我就把这些检测方法整合在一张<a href="http://od7mpc53s.bkt.clouddn.com/detect-android-emulator.png">思维导图</a>里供大家一览, 欢迎大家和我交流带带我</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://github.com/strazzere/anti-emulator">strazzere/anti-emulator</a>: 首次发表于2013年HitCon, 提出了检测虚拟机的一些方法和思路, 应该是Android模拟器检测的开山之作了, 本文也主要基于该仓库进行讲解. </li>
+<li><a href="http://www.syssec-project.eu/m/page-media/3/petsas_rage_against_the_virtual_machine.pdf">Rage Against the Virtual Machine: Hindering Dynamic Analysis of Android Malware</a>: 通过任务调度检测和使用SMC识别都是参考于这篇论文. 这篇论文和下面这篇论文十分有参考价值, 值得一读. </li>
+<li><a href="https://users.ece.cmu.edu/~tvidas/papers/ASIACCS14.pdf">Evading Android Runtime Analysis via Sandbox Detection</a>: 论文中提出了大量的检测Android运行环境的方法和思路, 内容丰富且十分全面, 也值得一读. </li>
+<li><a href="https://github.com/CalebFenton/AndroidEmulatorDetect">CalebFenton/AndroidEmulatorDetect</a>: 这个仓库其实是整合了一些文章和仓库中的检测方法和代码, 而且并不全面, 不过倒是给出了很多参考链接, 我顺藤摸瓜.</li>
+<li><a href="https://stackoverflow.com/questions/2799097/how-can-i-detect-when-an-android-application-is-running-in-the-emulator">How can I detect when an Android application is running in the emulator?</a>: 网友给出了很多解决方法. 但实际上并不全面, 也只是模拟器检测中的冰山一角罢了. 毕竟可以检测的地方多了去了.</li>
+<li><a href="http://cb.drops.wiki/drops/mobile-13486.html">利用任务调度特性检测Android模拟器</a></li>
+</ul>
+</p></div><div class="share"><span>分享到</span>&nbsp;<span class="soc"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></span><span class="soc"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></span><span class="soc"><a href="http://twitter.com/home?status=https://vancir.github.io/how-to-detect-android-emulator.html%20Vancir%20检测Android虚拟机的方法和代码实现" class="fa fa-twitter"></a></span></div><div class="pagination"><p class="clearfix"><span class="pre pagbuttons"><a role="navigation" href="/brief-intro-to-vuldeepecker.html" title="论文: VulDeePecker基于深度学习的漏洞检测系统"><i class="fa fa-angle-double-left"></i>&nbsp;上一篇: 论文: VulDeePecker基于深度学习的漏洞检测系统</a></span></p></div></div></div></div><div class="visible-xs site-bottom-footer"><footer><p>&copy;&nbsp;2020&nbsp;<a target="_blank" href="https://vancir.github.io" rel="noopener noreferrer">Vancir</a></p><p>Theme&nbsp;<a target="_blank" href="https://github.com/SumiMakito/hexo-theme-typography" rel="noopener noreferrer">Typography</a>&nbsp;by&nbsp;<a target="_blank" href="https://www.keep.moe" rel="noopener noreferrer">Makito</a></p><p>Proudly published with&nbsp;<a target="_blank" href="https://hexo.io" rel="noopener noreferrer">Hexo</a></p></footer></div></div></div></div><script src="/js/jquery-3.1.0.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script><script src="/js/google-analytics.js"></script><script src="/js/typography.js"></script></body></html>

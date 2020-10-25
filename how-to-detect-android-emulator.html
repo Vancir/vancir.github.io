@@ -447,13 +447,13 @@ jint <span class="token function">Java_diff_strazzere_anti_emulator_FindEmulator
 <p>检测是否存在<strong>eth0</strong>网卡. </p>
 <h2 id="传感器"><a href="#传感器" class="headerlink" title="传感器"></a>传感器</h2><p>手机上配备了各式各样的传感器, 但它们实质上都是基于从环境收集的信息输出值, 因此想要模拟传感器是非常具有挑战性的. 这些传感器为识别手机和模拟器提供了新的机会. </p>
 <p>比如在论文<strong>Rage Against the Virtual Machine: Hindering Dynamic Analysis of Android Malware</strong>中, 作者对Android模拟器的加速器进行测试, 作者发现Android模拟器上的传感器会在相同的时间间隔内(观测结果是0.8s, 标准偏差为0.003043)产生相同的值. 显然对于现实世界的传感器, 这是不可能的. </p>
-<p><img src="https://bbs.pediy.com/upload/attach/201902/93_57YJWEHU6F5JQ2W.png" alt="acc-cdf.png"></p>
+<p><img src="https://i.loli.net/2020/10/25/lJsdfwkPRoXrWTZ.jpg" alt="acc-cdf.png"></p>
 <p>于是我们可以先注册一个传感器监听器, 如果注册失败, 就可能是在模拟器中(排除实际设备不支持传感器的可能性). 如果注册成功, 那么检查<strong>onSensorChanged</strong>回调方法, 如果在连续调用这个方法的过程所观察到的传感器值或时间间隔相同, 那么就可以认定是在模拟器环境中.</p>
 <h2 id="QEMU任务调度"><a href="#QEMU任务调度" class="headerlink" title="QEMU任务调度"></a>QEMU任务调度</h2><p>出于性能优化的原因, QEMU在每次执行指令时都不会主动更新程序计数器(PC), 由于翻译指令在本地执行, 而增加PC需要额外的指令带来开销. 所以QEMU只在执行那些从线性执行过程里中断的指令(例如分支指令)时才会更新程序计数器. 这也就导致在执行一些基本块的期间如果发生了调度事件, 那么也没有办法恢复调度前的PC, 也是出于这个原因, QEMU仅在执行基本块后才发生调度事件, 绝不会执行的过程中发生. </p>
-<p><img src="https://bbs.pediy.com/upload/attach/201902/93_Q4YVRMHW9ZH8VNT.png" alt="sche-point.png"></p>
+<p><img src="https://i.loli.net/2020/10/25/ebIoUAySdj6OtWa.jpg" alt="sche-point.png"></p>
 <p>如上图, 因为调度可能在任意时间发生, 所以在非模拟器环境下, 会观察到大量的调度点. 而在模拟器环境中, 只能看到特定的调度点. </p>
 <h2 id="SMC识别"><a href="#SMC识别" class="headerlink" title="SMC识别"></a>SMC识别</h2><p>因为QEMU会跟踪代码页的改动, 于是存在一种新颖的方法来检测QEMU–使用自修改代码(Self-Modifying Code, SMC)引起模拟器和实际设备之间的执行流变化. </p>
-<p><img src="https://bbs.pediy.com/upload/attach/201902/93_FH46EXV5WKFAG3Z.png" alt="memory.png"></p>
+<p><img src="https://i.loli.net/2020/10/25/zaUkIypswWN3hTM.jpg" alt="memory.png"></p>
 <p>ARM处理器包含有两个不同的缓冲Cache, 一个用于指令访问(I-Cache), 而另一个用于数据访问(D-Cache). 但如ARM这样的哈佛架构并不能保证I-Cache和D-Cache之间的一致性. 因此CPU有可能在新代码片已经写入主存后执行旧的代码片(也许是无效的). </p>
 <p>这个问题可以通过强迫两个缓存一致得到解决, 这有两步:</p>
 <ol>
@@ -461,13 +461,13 @@ jint <span class="token function">Java_diff_strazzere_anti_emulator_FindEmulator
 <li>使I-Cache无效, 以便它可以用主存的新内容重新填充. </li>
 </ol>
 <p>在原生Android代码中, 可以使用<strong>cacheflush</strong>函数, 该函数通过系统调用完成上述操作. </p>
-<p><img src="https://bbs.pediy.com/upload/attach/201902/93_R9VYHDAE6SYEAEU.png" alt="diff.png"></p>
+<p><img src="https://i.loli.net/2020/10/25/Y6dam7XNjwnx4gO.jpg" alt="diff.png"></p>
 <p>识别代码, 使用一个具有读写权限的内存, 其中包含两个不同函数f1和f2的代码, 这两个函数其实很简单, 只是单纯在一个全局字符串变量的末尾附加各自的函数名称, 这两个函数会在循环里交错执行, 这样就可以通过结果的字符串推断出函数调用序列. </p>
 <p>如前所述, 我们调用<strong>cacheflush</strong>来同步缓存. 在实际设备和模拟器上运行代码得到的结果是相同的–每次执行都会产生一致的函数调用序列. </p>
 <p>接下来我们移除调用<strong>cacheflush</strong>, 执行相同的操作. 那么在实际设备中, 我们每次运行都会观察到一个随机的函数调用序列, 这也如前所述的那样, 因为I-Cache可能包含一些旧指令, 每次调用的时候缓存都不同步所导致的. </p>
 <p>而模拟器环境却不会发生这样的情况, 而且函数调用序列会跟之前没有移除<strong>cacheflush</strong>时完全相同, 也就是每次函数调用前缓存都是一致的. 这是因为QEMU会跟踪代码页上的修改, 并确保生成的代码始终与内存中的目标指令匹配, 因此QEMU会放弃之前版本的代码翻译并重新生成新代码. </p>
 <h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>看到这里会不会已经觉得检测方法够多了. 可是我还只是看了13年14年的资料. 有关近几年的资料还未涉及. </p>
-<p>最后我就把这些检测方法整合在一张<a href="https://bbs.pediy.com/upload/attach/201804/722644_2SENQ6BYYPSXAH8.png">思维导图</a>里供大家一览, 欢迎大家和我交流带带我</p>
+<p>最后我就把这些检测方法整合在一张<a href="https://i.loli.net/2020/10/25/x1gzSDWEBAbQ9mG.jpg">思维导图</a>里供大家一览, 欢迎大家和我交流带带我</p>
 <h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
 <li><a href="https://github.com/strazzere/anti-emulator">strazzere/anti-emulator</a>: 首次发表于2013年HitCon, 提出了检测虚拟机的一些方法和思路, 应该是Android模拟器检测的开山之作了, 本文也主要基于该仓库进行讲解. </li>
 <li><a href="http://www.syssec-project.eu/m/page-media/3/petsas_rage_against_the_virtual_machine.pdf">Rage Against the Virtual Machine: Hindering Dynamic Analysis of Android Malware</a>: 通过任务调度检测和使用SMC识别都是参考于这篇论文. 这篇论文和下面这篇论文十分有参考价值, 值得一读. </li>
@@ -476,5 +476,5 @@ jint <span class="token function">Java_diff_strazzere_anti_emulator_FindEmulator
 <li><a href="https://stackoverflow.com/questions/2799097/how-can-i-detect-when-an-android-application-is-running-in-the-emulator">How can I detect when an Android application is running in the emulator?</a>: 网友给出了很多解决方法. 但实际上并不全面, 也只是模拟器检测中的冰山一角罢了. 毕竟可以检测的地方多了去了.</li>
 <li><a href="http://cb.drops.wiki/drops/mobile-13486.html">利用任务调度特性检测Android模拟器</a></li>
 </ul>
-<p><img src="https://bbs.pediy.com/upload/attach/201804/722644_2SENQ6BYYPSXAH8.png" alt="思维导图.png"></p>
+<p><img src="https://i.loli.net/2020/10/25/x1gzSDWEBAbQ9mG.jpg" alt="思维导图.png"></p>
 </p></div><div class="share"><span>分享到</span>&nbsp;<span class="soc"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></span><span class="soc"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></span><span class="soc"><a href="http://twitter.com/home?status=https://vancir.github.io/how-to-detect-android-emulator.html%20Vancir%20检测Android虚拟机的方法和代码实现" class="fa fa-twitter"></a></span></div><div class="pagination"><p class="clearfix"><span class="pre pagbuttons"><a role="navigation" href="/brief-intro-to-vuldeepecker.html" title="论文: VulDeePecker基于深度学习的漏洞检测系统"><i class="fa fa-angle-double-left"></i>&nbsp;上一篇: 论文: VulDeePecker基于深度学习的漏洞检测系统</a></span></p></div></div></div></div><div class="visible-xs site-bottom-footer"><footer><p>&copy;&nbsp;2020&nbsp;<a target="_blank" href="https://vancir.github.io" rel="noopener noreferrer">Vancir</a></p><p>Theme&nbsp;<a target="_blank" href="https://github.com/SumiMakito/hexo-theme-typography" rel="noopener noreferrer">Typography</a>&nbsp;by&nbsp;<a target="_blank" href="https://www.keep.moe" rel="noopener noreferrer">Makito</a></p><p>Proudly published with&nbsp;<a target="_blank" href="https://hexo.io" rel="noopener noreferrer">Hexo</a></p></footer></div></div></div></div><script src="/js/jquery-3.1.0.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script><script src="/js/google-analytics.js"></script><script src="/js/typography.js"></script></body></html>

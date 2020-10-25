@@ -131,7 +131,8 @@ prism_plugin:
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
-  type: ''
+  type: 'git'
+  branch: gh-pages
 
 server:
   compress: true

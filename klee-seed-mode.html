@@ -1,171 +1,171 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="Vancir"><title>KLEE中Seed模式流程解析 · Vancir</title><meta name="description" content="main.cpp  cl::list
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="Vancir"><title>KLEE中Seed模式流程解析及相关选项介绍 · Vancir</title><meta name="description" content="main.cpp  cl::list&amp;lt;std::string&gt;
   SeedOutFile(&quot;seed-out&quot;);
 
-  cl::list
+  cl::list&amp;lt;std::string&gt;
   SeedOutDir(&quot;seed-out-dir&quot;);
-在main.cpp中首先会对ReplayKTestDir和ReplayKTestFile做判断. 如果用户有指定, 那么会继"><meta name="keywords" content=""><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="stylesheet" href="/css/style.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"><meta name="generator" content="Hexo 4.2.1"><link rel="stylesheet" href="/css/prism-dracula.css" type="text/css"></head><body><div id="stage" class="container"><div class="row"><div id="side-bar" class="col-sm-3 col-xs-12 side-container invisible"><div class="vertical-text site-title"><h3 tabindex="-1" class="site-title-small"><a href="/" class="a-title">Que sera sera</a></h3><h1 tabindex="-1" class="site-title-large"><a href="/" class="a-title">静言思之</a></h1><!--h6(onclick="triggerSiteNav()") Trigger--></div><br class="visible-lg visible-md visible-sm"><div id="site-nav" class="site-title-links"><ul><li><a href="/">回到原来</a></li><li><a href="/archives">文章归档</a></li><li><a href="/misc/aboutme.html">关于作者</a></li><li><a href="/misc/opensource.html">开源项目</a></li><li class="soc"><a href="https://github.com/vancir" target="_blank" rel="noopener noreferrer"><i class="fa fa-github">&nbsp;</i></a><a href="https://twitter.com/Vancirprince" target="_blank" rel="noopener noreferrer"><i class="fa fa-twitter">&nbsp;</i></a><a href="http://weibo.com/u/5226074301" target="_blank" rel="noopener noreferrer"><i class="fa fa-weibo">&nbsp;</i></a><a href="https://vancir.github.io/atom.xml" target="_blank" rel="noopener noreferrer"><i class="fa fa-rss">&nbsp;</i></a></li></ul><div class="visible-lg visible-md visible-sm site-nav-footer"><br class="site-nav-footer-br"><footer><p>&copy;&nbsp;2020&nbsp;<a target="_blank" href="https://vancir.github.io" rel="noopener noreferrer">Vancir</a></p><p>Theme&nbsp;<a target="_blank" href="https://github.com/SumiMakito/hexo-theme-typography" rel="noopener noreferrer">Typography</a>&nbsp;by&nbsp;<a target="_blank" href="https://www.keep.moe" rel="noopener noreferrer">Makito</a></p><p>Proudly published with&nbsp;<a target="_blank" href="https://hexo.io" rel="noopener noreferrer">Hexo</a></p></footer></div></div></div><div id="main-container" class="col-sm-9 col-xs-12 main-container invisible"><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post-container"><p class="post-title"><a>KLEE中Seed模式流程解析</a></p><p class="post-meta"><span class="date meta-item">发布于&nbsp;2018-09-09</span></p><p class="post-abstract"><h2 id="main-cpp"><a href="#main-cpp" class="headerlink" title="main.cpp"></a>main.cpp</h2><pre class=" language-c++"><code class="language-c++">  cl::list<std::string>
-  SeedOutFile("seed-out");
+在main.cpp中首先会对ReplayKTestDir和R"><meta name="keywords" content=""><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="stylesheet" href="/css/style.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"><meta name="generator" content="Hexo 4.2.1"><link rel="stylesheet" href="/css/prism-dracula.css" type="text/css"></head><body><div id="stage" class="container"><div class="row"><div id="side-bar" class="col-sm-3 col-xs-12 side-container invisible"><div class="vertical-text site-title"><h3 tabindex="-1" class="site-title-small"><a href="/" class="a-title">Que sera sera</a></h3><h1 tabindex="-1" class="site-title-large"><a href="/" class="a-title">静言思辨</a></h1><!--h6(onclick="triggerSiteNav()") Trigger--></div><br class="visible-lg visible-md visible-sm"><div id="site-nav" class="site-title-links"><ul><li><a href="/">回到原来</a></li><li><a href="/archives">文章归档</a></li><li><a href="/misc/aboutme.html">关于作者</a></li><li><a href="/misc/opensource.html">开源项目</a></li><li class="soc"><a href="https://github.com/vancir" target="_blank" rel="noopener noreferrer"><i class="fa fa-github">&nbsp;</i></a><a href="https://twitter.com/Vancirprince" target="_blank" rel="noopener noreferrer"><i class="fa fa-twitter">&nbsp;</i></a><a href="http://weibo.com/u/5226074301" target="_blank" rel="noopener noreferrer"><i class="fa fa-weibo">&nbsp;</i></a><a href="https://vancir.github.io/atom.xml" target="_blank" rel="noopener noreferrer"><i class="fa fa-rss">&nbsp;</i></a></li></ul><div class="visible-lg visible-md visible-sm site-nav-footer"><br class="site-nav-footer-br"><footer><p>&copy;&nbsp;2020&nbsp;<a target="_blank" href="https://vancir.github.io" rel="noopener noreferrer">Vancir</a></p><p>Theme&nbsp;<a target="_blank" href="https://github.com/SumiMakito/hexo-theme-typography" rel="noopener noreferrer">Typography</a>&nbsp;by&nbsp;<a target="_blank" href="https://www.keep.moe" rel="noopener noreferrer">Makito</a></p><p>Proudly published with&nbsp;<a target="_blank" href="https://hexo.io" rel="noopener noreferrer">Hexo</a></p></footer></div></div></div><div id="main-container" class="col-sm-9 col-xs-12 main-container invisible"><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post-container"><p class="post-title"><a>KLEE中Seed模式流程解析及相关选项介绍</a></p><p class="post-meta"><span class="date meta-item">发布于&nbsp;2018-09-09</span></p><p class="post-abstract"><h2 id="main-cpp"><a href="#main-cpp" class="headerlink" title="main.cpp"></a>main.cpp</h2><pre class=" language-c"><code class="language-c">  cl<span class="token punctuation">:</span><span class="token punctuation">:</span>list<span class="token operator">&lt;</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>string<span class="token operator">></span>
+  <span class="token function">SeedOutFile</span><span class="token punctuation">(</span><span class="token string">"seed-out"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  cl::list<std::string>
-  SeedOutDir("seed-out-dir");</code></pre>
+  cl<span class="token punctuation">:</span><span class="token punctuation">:</span>list<span class="token operator">&lt;</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>string<span class="token operator">></span>
+  <span class="token function">SeedOutDir</span><span class="token punctuation">(</span><span class="token string">"seed-out-dir"</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
 <p>在main.cpp中首先会对ReplayKTestDir和ReplayKTestFile做判断. 如果用户有指定, 那么会继续判断SeedOutDir和SeedOutFile是否为空. </p>
-<pre class=" language-c++"><code class="language-c++"> if (!ReplayKTestDir.empty() || !ReplayKTestFile.empty()) {
-    assert(SeedOutFile.empty());
-    assert(SeedOutDir.empty());
-     ...
-     // replay ktest 文件模式
- } else {    // 没有指定replay ktest模式
-     // 直接从SeedOutFile读取seed
-     for(){
-         KTest *out = kTest_fromFile(it->c_str());
-     }
-     seeds.push_back(out);
- }</code></pre>
+<pre class=" language-c"><code class="language-c"> <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>ReplayKTestDir<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token operator">!</span>ReplayKTestFile<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token function">assert</span><span class="token punctuation">(</span>SeedOutFile<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">assert</span><span class="token punctuation">(</span>SeedOutDir<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+     <span class="token comment" spellcheck="true">// replay ktest 文件模式</span>
+ <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>    <span class="token comment" spellcheck="true">// 没有指定replay ktest模式</span>
+     <span class="token comment" spellcheck="true">// 直接从SeedOutFile读取seed</span>
+     <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{</span>
+         KTest <span class="token operator">*</span>out <span class="token operator">=</span> <span class="token function">kTest_fromFile</span><span class="token punctuation">(</span>it<span class="token operator">-></span><span class="token function">c_str</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token punctuation">}</span>
+     seeds<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span>out<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token punctuation">}</span></code></pre>
 <p>最终读取到的seed都保存在<strong>std::vector&lt;KTest *&gt; seeds</strong>中. 然后判断是否有读取到seed</p>
-<pre class=" language-c++"><code class="language-c++">    if (!seeds.empty()) {
-      klee_message("KLEE: using %lu seeds\n", seeds.size());
-      // 使用 seed
-      interpreter->useSeeds(&seeds);
-    }</code></pre>
+<pre class=" language-c"><code class="language-c">    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>seeds<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token function">klee_message</span><span class="token punctuation">(</span><span class="token string">"KLEE: using %lu seeds\n"</span><span class="token punctuation">,</span> seeds<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment" spellcheck="true">// 使用 seed</span>
+      interpreter<span class="token operator">-></span><span class="token function">useSeeds</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>seeds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span></code></pre>
 <p>既然读取到了seed, 那就<strong>interpreter-&gt;useSeeds(&amp;seeds);</strong>来使用seed. 这之后除了切换目录以及清理seeds的操作, 我们需要重点关注的是<strong>interpreter-&gt;runFunctionAsMain(mainFn, pArgc, pArgv, pEnvp);</strong>. 在interpreter设置好seed后, seed的使用过程会在<strong>runFunctionAsMain</strong>开始.</p>
-<pre class=" language-c++"><code class="language-c++">    if (RunInDir != "") {... // 切换目录
-    }
-    // 运行main函数
-    interpreter->runFunctionAsMain(mainFn, pArgc, pArgv, pEnvp);
+<pre class=" language-c"><code class="language-c">    <span class="token keyword">if</span> <span class="token punctuation">(</span>RunInDir <span class="token operator">!=</span> <span class="token string">""</span><span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token comment" spellcheck="true">// 切换目录</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment" spellcheck="true">// 运行main函数</span>
+    interpreter<span class="token operator">-></span><span class="token function">runFunctionAsMain</span><span class="token punctuation">(</span>mainFn<span class="token punctuation">,</span> pArgc<span class="token punctuation">,</span> pArgv<span class="token punctuation">,</span> pEnvp<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    while (!seeds.empty()) {    // 将seeds里的内容全部释放掉
-      kTest_free(seeds.back());
-      seeds.pop_back();
-    }</code></pre>
+    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token operator">!</span>seeds<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>    <span class="token comment" spellcheck="true">// 将seeds里的内容全部释放掉</span>
+      <span class="token function">kTest_free</span><span class="token punctuation">(</span>seeds<span class="token punctuation">.</span><span class="token function">back</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      seeds<span class="token punctuation">.</span><span class="token function">pop_back</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span></code></pre>
 <h2 id="useSeeds"><a href="#useSeeds" class="headerlink" title="useSeeds"></a>useSeeds</h2><p>既然谈到<strong>interpreter-&gt;useSeeds(&amp;seeds);</strong>那就来看看这个<strong>interpreter</strong></p>
-<pre class=" language-c++"><code class="language-c++">  Interpreter *interpreter =
-    theInterpreter = Interpreter::create(ctx, IOpts, handler);</code></pre>
+<pre class=" language-c"><code class="language-c">  Interpreter <span class="token operator">*</span>interpreter <span class="token operator">=</span>
+    theInterpreter <span class="token operator">=</span> Interpreter<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">create</span><span class="token punctuation">(</span>ctx<span class="token punctuation">,</span> IOpts<span class="token punctuation">,</span> handler<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
 <p>这里实例化了一个interpreter. 而该方法的声明是在<strong>interpreter.h</strong>里, 实现却是在<strong>Executor.cpp</strong></p>
-<pre class=" language-c++"><code class="language-c++">Interpreter *Interpreter::create(LLVMContext &ctx, const InterpreterOptions &opts,
-                                 InterpreterHandler *ih) {
-  return new Executor(ctx, opts, ih);
-}</code></pre>
+<pre class=" language-c"><code class="language-c">Interpreter <span class="token operator">*</span>Interpreter<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">create</span><span class="token punctuation">(</span>LLVMContext <span class="token operator">&amp;</span>ctx<span class="token punctuation">,</span> <span class="token keyword">const</span> InterpreterOptions <span class="token operator">&amp;</span>opts<span class="token punctuation">,</span>
+                                 InterpreterHandler <span class="token operator">*</span>ih<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> new <span class="token function">Executor</span><span class="token punctuation">(</span>ctx<span class="token punctuation">,</span> opts<span class="token punctuation">,</span> ih<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
 <p>也就是说实际上就是创建了一个Executor实例. 而<strong>Executor</strong>继承自<strong>interpreter类</strong>, 像<strong>useSeeds</strong>和<strong>runFunctionAsMain</strong>都在<strong>Executor类</strong>里进行了定义. 所以<strong>interpreter-&gt;useSeeds(&amp;seeds)</strong>实际上就是<strong>Executor::useSeeds</strong>, <strong>interpreter::runFunctionAsMain</strong>就是<strong>Executor::runFunctionAsMain</strong>. 那么接下来就只看<strong>Executor</strong></p>
-<pre class=" language-c++"><code class="language-c++">// Executor.h
-const std::vector<struct KTest *> *usingSeeds;  
-void useSeeds(const std::vector<struct KTest *> *seeds) override {
-  usingSeeds = seeds;
-}</code></pre>
+<pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Executor.h</span>
+<span class="token keyword">const</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span><span class="token keyword">struct</span> KTest <span class="token operator">*</span><span class="token operator">></span> <span class="token operator">*</span>usingSeeds<span class="token punctuation">;</span>  
+<span class="token keyword">void</span> <span class="token function">useSeeds</span><span class="token punctuation">(</span><span class="token keyword">const</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span><span class="token keyword">struct</span> KTest <span class="token operator">*</span><span class="token operator">></span> <span class="token operator">*</span>seeds<span class="token punctuation">)</span> override <span class="token punctuation">{</span>
+  usingSeeds <span class="token operator">=</span> seeds<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
 <p>这里将seeds传递给了Executor的私有成员<strong>usingSeeds</strong>. 那么这也就是<strong>interpreter-&gt;useSeeds()</strong>所做的操作了</p>
 <h2 id="runFunctionAsMain"><a href="#runFunctionAsMain" class="headerlink" title="runFunctionAsMain"></a>runFunctionAsMain</h2><p>回顾一下runFunctionAsMain的使用: <strong>interpreter-&gt;runFunctionAsMain(mainFn, pArgc, pArgv, pEnvp);</strong></p>
-<pre class=" language-c++"><code class="language-c++">void Executor::runFunctionAsMain(Function *f,
-                 int argc,
-                 char **argv,
-                 char **envp) {
-  std::vector<ref<Expr> > arguments;
+<pre class=" language-c"><code class="language-c"><span class="token keyword">void</span> Executor<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">runFunctionAsMain</span><span class="token punctuation">(</span>Function <span class="token operator">*</span>f<span class="token punctuation">,</span>
+                 <span class="token keyword">int</span> argc<span class="token punctuation">,</span>
+                 <span class="token keyword">char</span> <span class="token operator">*</span><span class="token operator">*</span>argv<span class="token punctuation">,</span>
+                 <span class="token keyword">char</span> <span class="token operator">*</span><span class="token operator">*</span>envp<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>ref<span class="token operator">&lt;</span>Expr<span class="token operator">></span> <span class="token operator">></span> arguments<span class="token punctuation">;</span>
 
-  // force deterministic initialization of memory objects
-  srand(1);
-  srandom(1);
+  <span class="token comment" spellcheck="true">// force deterministic initialization of memory objects</span>
+  <span class="token function">srand</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token function">srandom</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  // MemoryObject 表示分配在某个地址上的对象
-  MemoryObject *argvMO = 0;
+  <span class="token comment" spellcheck="true">// MemoryObject 表示分配在某个地址上的对象</span>
+  MemoryObject <span class="token operator">*</span>argvMO <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
 
-  int envc;
-  for (envc=0; envp[envc]; ++envc) ;  // envc表示环境变量的数量
+  <span class="token keyword">int</span> envc<span class="token punctuation">;</span>
+  <span class="token keyword">for</span> <span class="token punctuation">(</span>envc<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">;</span> envp<span class="token punctuation">[</span>envc<span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token operator">++</span>envc<span class="token punctuation">)</span> <span class="token punctuation">;</span>  <span class="token comment" spellcheck="true">// envc表示环境变量的数量</span>
 
-  unsigned NumPtrBytes = Context::get().getPointerWidth() / 8;
-  // 这里f对应的函数为 main, 使用KFunction进行结构化
-  KFunction *kf = kmodule->functionMap[f];
-  assert(kf);
-  // 枚举main好参数
-  Function::arg_iterator ai = f->arg_begin(), ae = f->arg_end();
-  // 为argc个参数和envc个环境变量分配空间
-  ......
+  <span class="token keyword">unsigned</span> NumPtrBytes <span class="token operator">=</span> Context<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getPointerWidth</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">/</span> <span class="token number">8</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// 这里f对应的函数为 main, 使用KFunction进行结构化</span>
+  KFunction <span class="token operator">*</span>kf <span class="token operator">=</span> kmodule<span class="token operator">-></span>functionMap<span class="token punctuation">[</span>f<span class="token punctuation">]</span><span class="token punctuation">;</span>
+  <span class="token function">assert</span><span class="token punctuation">(</span>kf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// 枚举main好参数</span>
+  Function<span class="token punctuation">:</span><span class="token punctuation">:</span>arg_iterator ai <span class="token operator">=</span> f<span class="token operator">-></span><span class="token function">arg_begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> ae <span class="token operator">=</span> f<span class="token operator">-></span><span class="token function">arg_end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// 为argc个参数和envc个环境变量分配空间</span>
+  <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
 
-  ExecutionState *state = new ExecutionState(kmodule->functionMap[f]);
+  ExecutionState <span class="token operator">*</span>state <span class="token operator">=</span> new <span class="token function">ExecutionState</span><span class="token punctuation">(</span>kmodule<span class="token operator">-></span>functionMap<span class="token punctuation">[</span>f<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  if (pathWriter) 
-    // 初始化 记录混合符号执行路径的流 pathOS
-    state->pathOS = pathWriter->open();
-  if (symPathWriter) 
-    // 初始化 记录单纯符号执行路径的流 pathOS
-    state->symPathOS = symPathWriter->open();
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>pathWriter<span class="token punctuation">)</span> 
+    <span class="token comment" spellcheck="true">// 初始化 记录混合符号执行路径的流 pathOS</span>
+    state<span class="token operator">-></span>pathOS <span class="token operator">=</span> pathWriter<span class="token operator">-></span><span class="token function">open</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>symPathWriter<span class="token punctuation">)</span> 
+    <span class="token comment" spellcheck="true">// 初始化 记录单纯符号执行路径的流 pathOS</span>
+    state<span class="token operator">-></span>symPathOS <span class="token operator">=</span> symPathWriter<span class="token operator">-></span><span class="token function">open</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 
-  if (statsTracker)
-    // 记录符号执行时的状态切换, 
-    // 参数 parentFrame 为0, 说明是初始状态
-    statsTracker->framePushed(*state, 0);
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>statsTracker<span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">// 记录符号执行时的状态切换, </span>
+    <span class="token comment" spellcheck="true">// 参数 parentFrame 为0, 说明是初始状态</span>
+    statsTracker<span class="token operator">-></span><span class="token function">framePushed</span><span class="token punctuation">(</span><span class="token operator">*</span>state<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  assert(arguments.size() == f->arg_size() && "wrong number of arguments");
-  for (unsigned i = 0, e = f->arg_size(); i != e; ++i)
-    bindArgument(kf, i, *state, arguments[i]);
+  <span class="token function">assert</span><span class="token punctuation">(</span>arguments<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> f<span class="token operator">-></span><span class="token function">arg_size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token string">"wrong number of arguments"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">unsigned</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">,</span> e <span class="token operator">=</span> f<span class="token operator">-></span><span class="token function">arg_size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> i <span class="token operator">!=</span> e<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span>
+    <span class="token function">bindArgument</span><span class="token punctuation">(</span>kf<span class="token punctuation">,</span> i<span class="token punctuation">,</span> <span class="token operator">*</span>state<span class="token punctuation">,</span> arguments<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  // 将参数用 MemoryObject 和 ObjectState 等类进行封装, 以便klee使用
-  ...... 
+  <span class="token comment" spellcheck="true">// 将参数用 MemoryObject 和 ObjectState 等类进行封装, 以便klee使用</span>
+  <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> 
 
-  // 初始化了一些state相关的全局变量
-  initializeGlobals(*state);
+  <span class="token comment" spellcheck="true">// 初始化了一些state相关的全局变量</span>
+  <span class="token function">initializeGlobals</span><span class="token punctuation">(</span><span class="token operator">*</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  // 实例化一个当前进程的进程树
-  processTree = new PTree(state);
-  // 将当前进程作为进程树的根结点
-  state->ptreeNode = processTree->root;
-  run(*state);
-  // run(*state)的善后处理
-  delete processTree;
-  processTree = 0;
+  <span class="token comment" spellcheck="true">// 实例化一个当前进程的进程树</span>
+  processTree <span class="token operator">=</span> new <span class="token function">PTree</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// 将当前进程作为进程树的根结点</span>
+  state<span class="token operator">-></span>ptreeNode <span class="token operator">=</span> processTree<span class="token operator">-></span>root<span class="token punctuation">;</span>
+  <span class="token function">run</span><span class="token punctuation">(</span><span class="token operator">*</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// run(*state)的善后处理</span>
+  delete processTree<span class="token punctuation">;</span>
+  processTree <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
 
-  // hack to clear memory objects
-  delete memory;
-  memory = new MemoryManager(NULL);
+  <span class="token comment" spellcheck="true">// hack to clear memory objects</span>
+  delete memory<span class="token punctuation">;</span>
+  memory <span class="token operator">=</span> new <span class="token function">MemoryManager</span><span class="token punctuation">(</span><span class="token constant">NULL</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  globalObjects.clear();
-  globalAddresses.clear();
+  globalObjects<span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  globalAddresses<span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  if (statsTracker)
-    statsTracker->done();
-}</code></pre>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>statsTracker<span class="token punctuation">)</span>
+    statsTracker<span class="token operator">-></span><span class="token function">done</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
 <p>我用 <strong>……</strong>省略了在 <strong>runFunctionAsMain</strong> 中有关参数的部分, 以便更加清晰地来看这个函数. <strong>runFunctionAsMain</strong>的前半部分都是在做参数的相关操作, 比如为参数分配空间, 将参数进行封装, 将参数与当前状态绑定之类. 后半部分则是关于<strong>state</strong>的操作, 再为state进行了一些初始化操作后, 使用<strong>run(*state)</strong>来运行状态. 这也是<strong>runFunctionAsMain</strong>里我们的重要关注点. </p>
 <h2 id="run"><a href="#run" class="headerlink" title="run"></a>run</h2><p>联系上部分的<strong>interpreter-&gt;useSeeds</strong>, 在设置好<strong>usingSeeds</strong>, 而<strong>usingSeeds</strong>仅在<strong>Executor::run</strong>中使用. 那么我们就直接来分析<strong>run()</strong>来看seed对klee执行流程的影响</p>
-<pre class=" language-c++"><code class="language-c++">void Executor::run(ExecutionState &initialState) {
-  // 对模块中每个函数的每条指令的常数进行处理
-  // 将处理后的结果存储在某个数据结构中
-  bindModuleConstants();
+<pre class=" language-c"><code class="language-c"><span class="token keyword">void</span> Executor<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">run</span><span class="token punctuation">(</span>ExecutionState <span class="token operator">&amp;</span>initialState<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token comment" spellcheck="true">// 对模块中每个函数的每条指令的常数进行处理</span>
+  <span class="token comment" spellcheck="true">// 将处理后的结果存储在某个数据结构中</span>
+  <span class="token function">bindModuleConstants</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  // 初始化计时器
-  initTimers();
-  // 将初始状态 initialState 添加到 states 这个全局变量中
-  states.insert(&initialState);
+  <span class="token comment" spellcheck="true">// 初始化计时器</span>
+  <span class="token function">initTimers</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// 将初始状态 initialState 添加到 states 这个全局变量中</span>
+  states<span class="token punctuation">.</span><span class="token function">insert</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>initialState<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  if (usingSeeds) { ... // 有传入seed
-  }
-  // 创建一个searcher实例
-  searcher = constructUserSearcher(*this);
-  // 初始化searcher操作
-  std::vector<ExecutionState *> newStates(states.begin(), states.end());
-  searcher->update(0, newStates, std::vector<ExecutionState *>());
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>usingSeeds<span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token comment" spellcheck="true">// 有传入seed</span>
+  <span class="token punctuation">}</span>
+  <span class="token comment" spellcheck="true">// 创建一个searcher实例</span>
+  searcher <span class="token operator">=</span> <span class="token function">constructUserSearcher</span><span class="token punctuation">(</span><span class="token operator">*</span>this<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// 初始化searcher操作</span>
+  std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>ExecutionState <span class="token operator">*</span><span class="token operator">></span> <span class="token function">newStates</span><span class="token punctuation">(</span>states<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> states<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  searcher<span class="token operator">-></span><span class="token function">update</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> newStates<span class="token punctuation">,</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>ExecutionState <span class="token operator">*</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  while (!states.empty() && !haltExecution) {
-    // 通过searcher采取的搜索策略来搜索执行下一个state
-    ExecutionState &state = searcher->selectState();
-    // ki是当前指令
-    KInstruction *ki = state.pc;
-    // 指向下一条指令
-    stepInstruction(state);
-    // 基于llvm指令集, 对指令字节码进行具体解析并模拟执行
-    executeInstruction(state, ki);
-    // 处理计时器
-    processTimers(&state, MaxInstructionTime);
-    // 检查内存使用情况
-    checkMemoryUsage();
-    // 对states进行更新
-    // 不同的搜索策略, 其更新states的策略不同
-    updateStates(&state);
-  }
+  <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token operator">!</span>states<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>haltExecution<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// 通过searcher采取的搜索策略来搜索执行下一个state</span>
+    ExecutionState <span class="token operator">&amp;</span>state <span class="token operator">=</span> searcher<span class="token operator">-></span><span class="token function">selectState</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// ki是当前指令</span>
+    KInstruction <span class="token operator">*</span>ki <span class="token operator">=</span> state<span class="token punctuation">.</span>pc<span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// 指向下一条指令</span>
+    <span class="token function">stepInstruction</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// 基于llvm指令集, 对指令字节码进行具体解析并模拟执行</span>
+    <span class="token function">executeInstruction</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> ki<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// 处理计时器</span>
+    <span class="token function">processTimers</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">,</span> MaxInstructionTime<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// 检查内存使用情况</span>
+    <span class="token function">checkMemoryUsage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// 对states进行更新</span>
+    <span class="token comment" spellcheck="true">// 不同的搜索策略, 其更新states的策略不同</span>
+    <span class="token function">updateStates</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
 
-  // 善后工作
-  delete searcher;
-  searcher = 0;
+  <span class="token comment" spellcheck="true">// 善后工作</span>
+  delete searcher<span class="token punctuation">;</span>
+  searcher <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
 
-  doDumpStates();
-}
+  <span class="token function">doDumpStates</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
 </code></pre>
 <p>如果没有传入seed, <strong>usingSeeds</strong>为空, 那么<strong>run()</strong>的流程从上到下就是:</p>
 <ol>
@@ -183,446 +183,571 @@ void useSeeds(const std::vector<struct KTest *> *seeds) override {
 </ol>
 <p>实际上, 也就是常规符号执行的正常流程. 也就是说这里并没有对seed进行处理. seed也没有影响到这里的常规执行</p>
 <p>那么我们重点关注的地方就是<strong>usingSeeds</strong>部分</p>
-<h2 id="usingSeeds"><a href="#usingSeeds" class="headerlink" title="usingSeeds"></a>usingSeeds</h2><pre class=" language-c++"><code class="language-c++">if (usingSeeds) {
-    // 获得一个 seedMap[&initialState] 的引用
-    std::vector<SeedInfo> &v = seedMap[&initialState];
-    // 通过引用, 将 usingSeeds 里的 seed 内容存进 seedMap[&initialState] 中
-    for (std::vector<KTest*>::const_iterator it = usingSeeds->begin(), 
-           ie = usingSeeds->end(); it != ie; ++it)
-      v.push_back(SeedInfo(*it));
+<h2 id="usingSeeds"><a href="#usingSeeds" class="headerlink" title="usingSeeds"></a>usingSeeds</h2><pre class=" language-c"><code class="language-c"><span class="token keyword">if</span> <span class="token punctuation">(</span>usingSeeds<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// 获得一个 seedMap[&amp;initialState] 的引用</span>
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">&amp;</span>v <span class="token operator">=</span> seedMap<span class="token punctuation">[</span><span class="token operator">&amp;</span>initialState<span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// 通过引用, 将 usingSeeds 里的 seed 内容存进 seedMap[&amp;initialState] 中</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>KTest<span class="token operator">*</span><span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>const_iterator it <span class="token operator">=</span> usingSeeds<span class="token operator">-></span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+           ie <span class="token operator">=</span> usingSeeds<span class="token operator">-></span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> it <span class="token operator">!=</span> ie<span class="token punctuation">;</span> <span class="token operator">++</span>it<span class="token punctuation">)</span>
+      v<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span><span class="token function">SeedInfo</span><span class="token punctuation">(</span><span class="token operator">*</span>it<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    // 辅助用的变量 初始化
-    int lastNumSeeds = usingSeeds->size()+10;
-    double lastTime, startTime = lastTime = util::getWallTime();
-    ExecutionState *lastState = 0;
-    while (!seedMap.empty()) {
-      // 中断
-      if (haltExecution) {
-        doDumpStates();
-        return;
-      }
+    <span class="token comment" spellcheck="true">// 辅助用的变量 初始化</span>
+    <span class="token keyword">int</span> lastNumSeeds <span class="token operator">=</span> usingSeeds<span class="token operator">-></span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">+</span><span class="token number">10</span><span class="token punctuation">;</span>
+    <span class="token keyword">double</span> lastTime<span class="token punctuation">,</span> startTime <span class="token operator">=</span> lastTime <span class="token operator">=</span> util<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">getWallTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    ExecutionState <span class="token operator">*</span>lastState <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token operator">!</span>seedMap<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token comment" spellcheck="true">// 中断</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>haltExecution<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">doDumpStates</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
 
-      std::map<ExecutionState*, std::vector<SeedInfo> >::iterator it = 
-        seedMap.upper_bound(lastState);
-      if (it == seedMap.end())
-        it = seedMap.begin();
-      lastState = it->first;
-      unsigned numSeeds = it->second.size();
-      ExecutionState &state = *lastState;
-      // ki是当前指令
-      KInstruction *ki = state.pc;
-      // 指向下一条指令
-      stepInstruction(state);
-      // 基于llvm指令集, 对指令字节码进行具体解析并模拟执行
-      executeInstruction(state, ki);
-      // 处理计时器
-      processTimers(&state, MaxInstructionTime * numSeeds);
-      // 对states进行更新
-      updateStates(&state);
+      std<span class="token punctuation">:</span><span class="token punctuation">:</span>map<span class="token operator">&lt;</span>ExecutionState<span class="token operator">*</span><span class="token punctuation">,</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator it <span class="token operator">=</span> 
+        seedMap<span class="token punctuation">.</span><span class="token function">upper_bound</span><span class="token punctuation">(</span>lastState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>it <span class="token operator">==</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        it <span class="token operator">=</span> seedMap<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      lastState <span class="token operator">=</span> it<span class="token operator">-></span>first<span class="token punctuation">;</span>
+      <span class="token keyword">unsigned</span> numSeeds <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      ExecutionState <span class="token operator">&amp;</span>state <span class="token operator">=</span> <span class="token operator">*</span>lastState<span class="token punctuation">;</span>
+      <span class="token comment" spellcheck="true">// ki是当前指令</span>
+      KInstruction <span class="token operator">*</span>ki <span class="token operator">=</span> state<span class="token punctuation">.</span>pc<span class="token punctuation">;</span>
+      <span class="token comment" spellcheck="true">// 指向下一条指令</span>
+      <span class="token function">stepInstruction</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment" spellcheck="true">// 基于llvm指令集, 对指令字节码进行具体解析并模拟执行</span>
+      <span class="token function">executeInstruction</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> ki<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment" spellcheck="true">// 处理计时器</span>
+      <span class="token function">processTimers</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">,</span> MaxInstructionTime <span class="token operator">*</span> numSeeds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment" spellcheck="true">// 对states进行更新</span>
+      <span class="token function">updateStates</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-      // 每执行 1000 条语句 打印一次提示信息
-      if ((stats::instructions % 1000) == 0) {...
-      }
-    }
+      <span class="token comment" spellcheck="true">// 每执行 1000 条语句 打印一次提示信息</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>stats<span class="token punctuation">:</span><span class="token punctuation">:</span>instructions <span class="token operator">%</span> <span class="token number">1000</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
 
-    klee_message("seeding done (%d states remain)", (int) states.size());
+    <span class="token function">klee_message</span><span class="token punctuation">(</span><span class="token string">"seeding done (%d states remain)"</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span> states<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    // XXX total hack, just because I like non uniform better but want
-    // seed results to be equally weighted.
-    for (std::set<ExecutionState*>::iterator
-           it = states.begin(), ie = states.end();
-         it != ie; ++it) {
-      (*it)->weight = 1.;
-    }
+    <span class="token comment" spellcheck="true">// XXX total hack, just because I like non uniform better but want</span>
+    <span class="token comment" spellcheck="true">// seed results to be equally weighted.</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>set<span class="token operator">&lt;</span>ExecutionState<span class="token operator">*</span><span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator
+           it <span class="token operator">=</span> states<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> ie <span class="token operator">=</span> states<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+         it <span class="token operator">!=</span> ie<span class="token punctuation">;</span> <span class="token operator">++</span>it<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token punctuation">(</span><span class="token operator">*</span>it<span class="token punctuation">)</span><span class="token operator">-></span>weight <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">.</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
-    if (OnlySeed) {
-      doDumpStates();
-      return;
-    }
-  }
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>OnlySeed<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token function">doDumpStates</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
 </code></pre>
 <p>再看<strong>usingSeeds</strong>分支内的语句. 首先通过引用, 将 usingSeeds 里的 seed 内容存进 seedMap[&amp;initialState] 中, 然后初始化了一些辅助变量后, 进入一个循环知道seedMap为空. 那么很显然在这个循环里, 一定对seedMap进行了处理, 不然就是一个死循环了. </p>
 <p>来看循环里的代码, 跟之前<strong>usingSeeds</strong>以外的常规符号执行流程中, 最明显的区别就是没有用到searcher, 没有用到对应的搜索策略来选择下一个要执行的state. 而是使用的seedMap里各个seed对应的state. </p>
 <p>那么在这个循环里面, 我们检查了这几个函数. 只有<strong>executeInstruction(state, ki);</strong>有可能包含对seed的操作. </p>
 <p>因为在执行指令的时候并没有显式地将seedMap作参在执行时使用, 而seedMap是全局变量, 可以随时被调用, 而只需要比对state也能找到处理state时应该对应的seed. 因此我们就来看下整个klee工程里哪里有用到<strong>seedMap</strong></p>
-<pre class=" language-c++"><code class="language-c++">branch:
-lib/Core/Executor.cpp:    seedMap.find(&state);
-lib/Core/Executor.cpp:  if (it != seedMap.end()) {
-lib/Core/Executor.cpp:    seedMap.erase(it);
-lib/Core/Executor.cpp:        seedMap[result[i]].push_back(*siit);
-lib/Core/Executor.cpp:        if (result[i] && !seedMap.count(result[i])) {
-fork:
-lib/Core/Executor.cpp:    seedMap.find(¤t);
-lib/Core/Executor.cpp:  bool isSeeding = it != seedMap.end();
-lib/Core/Executor.cpp:    if (it != seedMap.end()) {
-lib/Core/Executor.cpp:      std::vector<SeedInfo> &trueSeeds = seedMap[trueState];
-lib/Core/Executor.cpp:      std::vector<SeedInfo> &falseSeeds = seedMap[falseState];
-lib/Core/Executor.cpp:        seedMap.erase(trueState);
-lib/Core/Executor.cpp:        seedMap.erase(falseState);
-addConstraint:
-lib/Core/Executor.cpp:    seedMap.find(&state);
-lib/Core/Executor.cpp:  if (it != seedMap.end()) {
-executeGetValue:
-lib/Core/Executor.cpp:    seedMap.find(&state);
-lib/Core/Executor.cpp:  if (it==seedMap.end() || isa<ConstantExpr>(e)) {
-updateStates:
-lib/Core/Executor.cpp:      seedMap.find(es);
-lib/Core/Executor.cpp:    if (it3 != seedMap.end())
-lib/Core/Executor.cpp:      seedMap.erase(it3);
-        run:
-        lib/Core/Executor.cpp:    std::vector<SeedInfo> &v = seedMap[&initialState];
-        lib/Core/Executor.cpp:    while (!seedMap.empty()) {
-        lib/Core/Executor.cpp:        seedMap.upper_bound(lastState);
-        lib/Core/Executor.cpp:      if (it == seedMap.end())
-        lib/Core/Executor.cpp:        it = seedMap.begin();
-        lib/Core/Executor.cpp:               it = seedMap.begin(), ie = seedMap.end();
-terminateState:
-lib/Core/Executor.cpp:      seedMap.find(&state);
-lib/Core/Executor.cpp:    if (it3 != seedMap.end())
-lib/Core/Executor.cpp:      seedMap.erase(it3);
-terminateStateEarly:
-lib/Core/Executor.cpp:      (AlwaysOutputSeeds && seedMap.count(&state)))
-terminateStateOnExit:
-lib/Core/Executor.cpp:      (AlwaysOutputSeeds && seedMap.count(&state)))
-executeMakeSymbolic:
-lib/Core/Executor.cpp:      seedMap.find(&state);
-lib/Core/Executor.cpp:    if (it!=seedMap.end()) { // In seed mode we need to add this as a
+<pre class=" language-c"><code class="language-c">branch<span class="token punctuation">:</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>  <span class="token keyword">if</span> <span class="token punctuation">(</span>it <span class="token operator">!=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    seedMap<span class="token punctuation">.</span><span class="token function">erase</span><span class="token punctuation">(</span>it<span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>        seedMap<span class="token punctuation">[</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span><span class="token operator">*</span>siit<span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>        <span class="token keyword">if</span> <span class="token punctuation">(</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>seedMap<span class="token punctuation">.</span><span class="token function">count</span><span class="token punctuation">(</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+fork<span class="token punctuation">:</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span>¤t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>  bool isSeeding <span class="token operator">=</span> it <span class="token operator">!=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    <span class="token keyword">if</span> <span class="token punctuation">(</span>it <span class="token operator">!=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>      std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">&amp;</span>trueSeeds <span class="token operator">=</span> seedMap<span class="token punctuation">[</span>trueState<span class="token punctuation">]</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>      std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">&amp;</span>falseSeeds <span class="token operator">=</span> seedMap<span class="token punctuation">[</span>falseState<span class="token punctuation">]</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>        seedMap<span class="token punctuation">.</span><span class="token function">erase</span><span class="token punctuation">(</span>trueState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>        seedMap<span class="token punctuation">.</span><span class="token function">erase</span><span class="token punctuation">(</span>falseState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+addConstraint<span class="token punctuation">:</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>  <span class="token keyword">if</span> <span class="token punctuation">(</span>it <span class="token operator">!=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+executeGetValue<span class="token punctuation">:</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>  <span class="token keyword">if</span> <span class="token punctuation">(</span>it<span class="token operator">==</span>seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">||</span> isa<span class="token operator">&lt;</span>ConstantExpr<span class="token operator">></span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+updateStates<span class="token punctuation">:</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>      seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span>es<span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    <span class="token keyword">if</span> <span class="token punctuation">(</span>it3 <span class="token operator">!=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>      seedMap<span class="token punctuation">.</span><span class="token function">erase</span><span class="token punctuation">(</span>it3<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        run<span class="token punctuation">:</span>
+        lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">&amp;</span>v <span class="token operator">=</span> seedMap<span class="token punctuation">[</span><span class="token operator">&amp;</span>initialState<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token operator">!</span>seedMap<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>        seedMap<span class="token punctuation">.</span><span class="token function">upper_bound</span><span class="token punctuation">(</span>lastState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>      <span class="token keyword">if</span> <span class="token punctuation">(</span>it <span class="token operator">==</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>        it <span class="token operator">=</span> seedMap<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>               it <span class="token operator">=</span> seedMap<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> ie <span class="token operator">=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+terminateState<span class="token punctuation">:</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>      seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    <span class="token keyword">if</span> <span class="token punctuation">(</span>it3 <span class="token operator">!=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>      seedMap<span class="token punctuation">.</span><span class="token function">erase</span><span class="token punctuation">(</span>it3<span class="token punctuation">)</span><span class="token punctuation">;</span>
+terminateStateEarly<span class="token punctuation">:</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>      <span class="token punctuation">(</span>AlwaysOutputSeeds <span class="token operator">&amp;&amp;</span> seedMap<span class="token punctuation">.</span><span class="token function">count</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+terminateStateOnExit<span class="token punctuation">:</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>      <span class="token punctuation">(</span>AlwaysOutputSeeds <span class="token operator">&amp;&amp;</span> seedMap<span class="token punctuation">.</span><span class="token function">count</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+executeMakeSymbolic<span class="token punctuation">:</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>      seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+lib<span class="token operator">/</span>Core<span class="token operator">/</span>Executor<span class="token punctuation">.</span>cpp<span class="token punctuation">:</span>    <span class="token keyword">if</span> <span class="token punctuation">(</span>it<span class="token operator">!=</span>seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token comment" spellcheck="true">// In seed mode we need to add this as a</span>
 </code></pre>
 <p>总结一下, 有这些函数用到了<strong>seedMap</strong>: <strong>branch</strong>, <strong>fork</strong>, <strong>addConstraint</strong>, <strong>executeGetValue</strong>, <strong>updateStates</strong>, <strong>run</strong>, <strong>terminateState</strong>, <strong>terminateStateEarly</strong>, <strong>terminateStateOnExit</strong>, <strong>executeMakeSymbolic</strong>一共十处</p>
 <p>那么我们就一个个来看(其中<strong>run</strong>已经分析过, 除外), <strong>seedMap</strong>到底是如何影响klee的执行流程的, 以及<strong>executeInstruction</strong>是通过哪一种方式来操作<strong>seedMap</strong></p>
 <h2 id="branch"><a href="#branch" class="headerlink" title="branch"></a>branch</h2><p>首先明确<strong>Executor::branch</strong>仅在<strong>executeGetValue</strong>和<strong>executeInstruction</strong>的<strong>IndirectBr</strong>和<strong>switch</strong>分支用到. </p>
-<pre class=" language-c++"><code class="language-c++">    std::vector<ExecutionState*> branches;
-    branch(state, conditions, branches);</code></pre>
+<pre class=" language-c"><code class="language-c">    std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>ExecutionState<span class="token operator">*</span><span class="token operator">></span> branches<span class="token punctuation">;</span>
+    <span class="token function">branch</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> conditions<span class="token punctuation">,</span> branches<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
 <p>作用则是在遇到分支的时候, 判断条件是否满足, 并将对应的条件复制到各自的branches里. 而在<strong>branch</strong>里</p>
-<pre class=" language-c++"><code class="language-c++">  if (MaxForks!=~0u && stats::forks >= MaxForks) {
-    unsigned next = theRNG.getInt32() % N;
-    for (unsigned i=0; i<N; ++i) {
-      if (i == next) {
-        result.push_back(&state);
-      } else {
-        result.push_back(NULL);
-      }
-    }
-  } else {
-    stats::forks += N-1;
+<pre class=" language-c"><code class="language-c">  <span class="token keyword">if</span> <span class="token punctuation">(</span>MaxForks<span class="token operator">!=</span><span class="token operator">~</span><span class="token number">0u</span> <span class="token operator">&amp;&amp;</span> stats<span class="token punctuation">:</span><span class="token punctuation">:</span>forks <span class="token operator">>=</span> MaxForks<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">unsigned</span> next <span class="token operator">=</span> theRNG<span class="token punctuation">.</span><span class="token function">getInt32</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">%</span> N<span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">unsigned</span> i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">;</span> i<span class="token operator">&lt;</span>N<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">==</span> next<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        result<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        result<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span><span class="token constant">NULL</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+    stats<span class="token punctuation">:</span><span class="token punctuation">:</span>forks <span class="token operator">+</span><span class="token operator">=</span> N<span class="token number">-1</span><span class="token punctuation">;</span>
 
-    // XXX do proper balance or keep random?
-    result.push_back(&state);
-    for (unsigned i=1; i<N; ++i) {
-      ExecutionState *es = result[theRNG.getInt32() % i];
-      ExecutionState *ns = es->branch();
-      addedStates.push_back(ns);
-      result.push_back(ns);
-      es->ptreeNode->data = 0;
-      std::pair<PTree::Node*,PTree::Node*> res = 
-        processTree->split(es->ptreeNode, ns, es);
-      ns->ptreeNode = res.first;
-      es->ptreeNode = res.second;
-    }
-  }
+    <span class="token comment" spellcheck="true">// XXX do proper balance or keep random?</span>
+    result<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">unsigned</span> i<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">;</span> i<span class="token operator">&lt;</span>N<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      ExecutionState <span class="token operator">*</span>es <span class="token operator">=</span> result<span class="token punctuation">[</span>theRNG<span class="token punctuation">.</span><span class="token function">getInt32</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">%</span> i<span class="token punctuation">]</span><span class="token punctuation">;</span>
+      ExecutionState <span class="token operator">*</span>ns <span class="token operator">=</span> es<span class="token operator">-></span><span class="token function">branch</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      addedStates<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span>ns<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      result<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span>ns<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      es<span class="token operator">-></span>ptreeNode<span class="token operator">-></span>data <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+      std<span class="token punctuation">:</span><span class="token punctuation">:</span>pair<span class="token operator">&lt;</span>PTree<span class="token punctuation">:</span><span class="token punctuation">:</span>Node<span class="token operator">*</span><span class="token punctuation">,</span>PTree<span class="token punctuation">:</span><span class="token punctuation">:</span>Node<span class="token operator">*</span><span class="token operator">></span> res <span class="token operator">=</span> 
+        processTree<span class="token operator">-></span><span class="token function">split</span><span class="token punctuation">(</span>es<span class="token operator">-></span>ptreeNode<span class="token punctuation">,</span> ns<span class="token punctuation">,</span> es<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      ns<span class="token operator">-></span>ptreeNode <span class="token operator">=</span> res<span class="token punctuation">.</span>first<span class="token punctuation">;</span>
+      es<span class="token operator">-></span>ptreeNode <span class="token operator">=</span> res<span class="token punctuation">.</span>second<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
 </code></pre>
 <p>首先会判断是否超出了状态fork的最大数量<strong>MaxForks</strong>, 如果没有超过, 那么就会示例化一个<strong>ExecutionState</strong>对象<strong>es</strong>, 并使用<strong>es-&gt;branch()</strong>来分出对应的分支. 这里的<strong>branch()</strong>的原型是<strong>ExecutionState::branch()</strong>, 就不要混淆了. </p>
-<pre class=" language-c++"><code class="language-c++">ExecutionState *ExecutionState::branch() {
-  depth++;
+<pre class=" language-c"><code class="language-c">ExecutionState <span class="token operator">*</span>ExecutionState<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">branch</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  depth<span class="token operator">++</span><span class="token punctuation">;</span>
 
-  ExecutionState *falseState = new ExecutionState(*this);
-  falseState->coveredNew = false;
-  falseState->coveredLines.clear();
+  ExecutionState <span class="token operator">*</span>falseState <span class="token operator">=</span> new <span class="token function">ExecutionState</span><span class="token punctuation">(</span><span class="token operator">*</span>this<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  falseState<span class="token operator">-></span>coveredNew <span class="token operator">=</span> false<span class="token punctuation">;</span>
+  falseState<span class="token operator">-></span>coveredLines<span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  weight *= .5;
-  falseState->weight -= weight;
+  weight <span class="token operator">*</span><span class="token operator">=</span> <span class="token punctuation">.</span><span class="token number">5</span><span class="token punctuation">;</span>
+  falseState<span class="token operator">-></span>weight <span class="token operator">-</span><span class="token operator">=</span> weight<span class="token punctuation">;</span>
 
-  return falseState;
-}</code></pre>
+  <span class="token keyword">return</span> falseState<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
 <p>以上是<strong>ExecutionState::branch()</strong>的代码判断. 可以看到这里以当前状态复制了一个<strong>falseState</strong>出来并进行了相关设置, 也就达成了分支所需要的效果.</p>
 <blockquote>
 <p>在下一部分的<strong>fork()</strong>中也是使用<strong>branch()</strong>的方法对状态进行分支. </p>
 </blockquote>
 <p>然后我们再来看<strong>Executor::branch</strong>中跟seed相关的代码</p>
-<pre class=" language-c++"><code class="language-c++">  // 如有必要, 重新分配种子以满足条件 
-  // 必要时根据OnlyReplaySeeds来终止状态 (低效但简单)
+<pre class=" language-c"><code class="language-c">  <span class="token comment" spellcheck="true">// 如有必要, 重新分配种子以满足条件 </span>
+  <span class="token comment" spellcheck="true">// 必要时根据OnlyReplaySeeds来终止状态 (低效但简单)</span>
 
-  // 返回 state 对应的迭代器 
-  std::map< ExecutionState*, std::vector<SeedInfo> >::iterator it = 
-    seedMap.find(&state);
+  <span class="token comment" spellcheck="true">// 返回 state 对应的迭代器 </span>
+  std<span class="token punctuation">:</span><span class="token punctuation">:</span>map<span class="token operator">&lt;</span> ExecutionState<span class="token operator">*</span><span class="token punctuation">,</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator it <span class="token operator">=</span> 
+    seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  if (it != seedMap.end()) {
-    std::vector<SeedInfo> seeds = it->second;
-    seedMap.erase(it);
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>it <span class="token operator">!=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> seeds <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">;</span>
+    seedMap<span class="token punctuation">.</span><span class="token function">erase</span><span class="token punctuation">(</span>it<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    // 假定每个种子仅满足一个条件(当条件互相排斥但结合起来又重言时, 就必然是true)
-    for (std::vector<SeedInfo>::iterator siit = seeds.begin(), 
-           siie = seeds.end(); siit != siie; ++siit) {
-      unsigned i;
-      for (i=0; i<N; ++i) {
-        ref<ConstantExpr> res;
-        bool success = 
-          solver->getValue(state, siit->assignment.evaluate(conditions[i]), 
-                           res);
-        assert(success && "FIXME: Unhandled solver failure");
-        (void) success;
-        if (res->isTrue())
-          break;
-      }
+    <span class="token comment" spellcheck="true">// 假定每个种子仅满足一个条件(当条件互相排斥但结合起来又重言时, 就必然是true)</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator siit <span class="token operator">=</span> seeds<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+           siie <span class="token operator">=</span> seeds<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> siit <span class="token operator">!=</span> siie<span class="token punctuation">;</span> <span class="token operator">++</span>siit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">unsigned</span> i<span class="token punctuation">;</span>
+      <span class="token keyword">for</span> <span class="token punctuation">(</span>i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">;</span> i<span class="token operator">&lt;</span>N<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        ref<span class="token operator">&lt;</span>ConstantExpr<span class="token operator">></span> res<span class="token punctuation">;</span>
+        bool success <span class="token operator">=</span> 
+          solver<span class="token operator">-></span><span class="token function">getValue</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> siit<span class="token operator">-></span>assignment<span class="token punctuation">.</span><span class="token function">evaluate</span><span class="token punctuation">(</span>conditions<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+                           res<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">assert</span><span class="token punctuation">(</span>success <span class="token operator">&amp;&amp;</span> <span class="token string">"FIXME: Unhandled solver failure"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span> success<span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>res<span class="token operator">-></span><span class="token function">isTrue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+          <span class="token keyword">break</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
 
-      // If we didn't find a satisfying condition randomly pick one
-      // (the seed will be patched).
-      if (i==N)
-        i = theRNG.getInt32() % N;
+      <span class="token comment" spellcheck="true">// If we didn't find a satisfying condition randomly pick one</span>
+      <span class="token comment" spellcheck="true">// (the seed will be patched).</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>i<span class="token operator">==</span>N<span class="token punctuation">)</span>
+        i <span class="token operator">=</span> theRNG<span class="token punctuation">.</span><span class="token function">getInt32</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">%</span> N<span class="token punctuation">;</span>
 
-      // Extra check in case we're replaying seeds with a max-fork
-      if (result[i])
-        seedMap[result[i]].push_back(*siit);
-    }
+      <span class="token comment" spellcheck="true">// Extra check in case we're replaying seeds with a max-fork</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span>
+        seedMap<span class="token punctuation">[</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span><span class="token operator">*</span>siit<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
-    if (OnlyReplaySeeds) {
-      for (unsigned i=0; i<N; ++i) {
-        if (result[i] && !seedMap.count(result[i])) {
-          terminateState(*result[i]);
-          result[i] = NULL;
-        }
-      } 
-    }
-  }
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>OnlyReplaySeeds<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">unsigned</span> i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">;</span> i<span class="token operator">&lt;</span>N<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>seedMap<span class="token punctuation">.</span><span class="token function">count</span><span class="token punctuation">(</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+          <span class="token function">terminateState</span><span class="token punctuation">(</span><span class="token operator">*</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          result<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span> 
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
 </code></pre>
 <p>这段代码中重点需要关注的是<strong>solver-&gt;getValue(current, siit-&gt;assignment.evaluate(condition), res);</strong>. 这一句的作用是用来判断我们的seed是否满足相应的condition, 并将结果保存在res里. 如果seed满足<strong>condition</strong>, 那么就直接跳出循环执行seed指定的路径. 最后的<strong>OnlyReplaySeeds</strong>也是用来提前终止那些不包含seed的状态. </p>
-<h2 id="fork"><a href="#fork" class="headerlink" title="fork"></a>fork</h2><pre class=" language-c++"><code class="language-c++">  std::map< ExecutionState*, std::vector<SeedInfo> >::iterator it = 
-    seedMap.find(¤t);
-  bool isSeeding = it != seedMap.end();
+<h2 id="fork"><a href="#fork" class="headerlink" title="fork"></a>fork</h2><pre class=" language-c"><code class="language-c">  std<span class="token punctuation">:</span><span class="token punctuation">:</span>map<span class="token operator">&lt;</span> ExecutionState<span class="token operator">*</span><span class="token punctuation">,</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator it <span class="token operator">=</span> 
+    seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span>¤t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  bool isSeeding <span class="token operator">=</span> it <span class="token operator">!=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>首先这里取了一个迭代器<strong>it</strong>以及布尔值<strong>isSeeding</strong>判断当前是否还在seed模式下. 那么我们重点关注迭代器<strong>it</strong>的相关操作</p>
-<pre class=" language-c++"><code class="language-c++">if (isSeeding && 
-      (current.forkDisabled || OnlyReplaySeeds) && 
-      res == Solver::Unknown) {
-    bool trueSeed=false, falseSeed=false;
-    // Is seed extension still ok here?
-    for (std::vector<SeedInfo>::iterator siit = it->second.begin(), 
-           siie = it->second.end(); siit != siie; ++siit) {
-      ref<ConstantExpr> res;
-      bool success = 
-        solver->getValue(current, siit->assignment.evaluate(condition), res);
-      assert(success && "FIXME: Unhandled solver failure");
-      (void) success;
-      if (res->isTrue()) {
-        trueSeed = true;
-      } else {
-        falseSeed = true;
-      }
-      if (trueSeed && falseSeed)
-        break;
-    }
-    if (!(trueSeed && falseSeed)) { // trueSeed和falseSeed至少有1个为假
-      assert(trueSeed || falseSeed);    // trueSeed和falseSeed至少有1个为真
+<pre class=" language-c"><code class="language-c"><span class="token keyword">if</span> <span class="token punctuation">(</span>isSeeding <span class="token operator">&amp;&amp;</span> 
+      <span class="token punctuation">(</span>current<span class="token punctuation">.</span>forkDisabled <span class="token operator">||</span> OnlyReplaySeeds<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> 
+      res <span class="token operator">==</span> Solver<span class="token punctuation">:</span><span class="token punctuation">:</span>Unknown<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    bool trueSeed<span class="token operator">=</span>false<span class="token punctuation">,</span> falseSeed<span class="token operator">=</span>false<span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// Is seed extension still ok here?</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator siit <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+           siie <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> siit <span class="token operator">!=</span> siie<span class="token punctuation">;</span> <span class="token operator">++</span>siit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      ref<span class="token operator">&lt;</span>ConstantExpr<span class="token operator">></span> res<span class="token punctuation">;</span>
+      bool success <span class="token operator">=</span> 
+        solver<span class="token operator">-></span><span class="token function">getValue</span><span class="token punctuation">(</span>current<span class="token punctuation">,</span> siit<span class="token operator">-></span>assignment<span class="token punctuation">.</span><span class="token function">evaluate</span><span class="token punctuation">(</span>condition<span class="token punctuation">)</span><span class="token punctuation">,</span> res<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token function">assert</span><span class="token punctuation">(</span>success <span class="token operator">&amp;&amp;</span> <span class="token string">"FIXME: Unhandled solver failure"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span> success<span class="token punctuation">;</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>res<span class="token operator">-></span><span class="token function">isTrue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        trueSeed <span class="token operator">=</span> true<span class="token punctuation">;</span>
+      <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        falseSeed <span class="token operator">=</span> true<span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>trueSeed <span class="token operator">&amp;&amp;</span> falseSeed<span class="token punctuation">)</span>
+        <span class="token keyword">break</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>trueSeed <span class="token operator">&amp;&amp;</span> falseSeed<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token comment" spellcheck="true">// trueSeed和falseSeed至少有1个为假</span>
+      <span class="token function">assert</span><span class="token punctuation">(</span>trueSeed <span class="token operator">||</span> falseSeed<span class="token punctuation">)</span><span class="token punctuation">;</span>    <span class="token comment" spellcheck="true">// trueSeed和falseSeed至少有1个为真</span>
 
-      res = trueSeed ? Solver::True : Solver::False;
-      addConstraint(current, trueSeed ? condition : Expr::createIsZero(condition));
-    }
-  }
+      res <span class="token operator">=</span> trueSeed <span class="token operator">?</span> Solver<span class="token punctuation">:</span><span class="token punctuation">:</span>True <span class="token punctuation">:</span> Solver<span class="token punctuation">:</span><span class="token punctuation">:</span>False<span class="token punctuation">;</span>
+      <span class="token function">addConstraint</span><span class="token punctuation">(</span>current<span class="token punctuation">,</span> trueSeed <span class="token operator">?</span> condition <span class="token punctuation">:</span> Expr<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">createIsZero</span><span class="token punctuation">(</span>condition<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
 </code></pre>
 <p>同样使用<strong>solver-&gt;getValue()</strong>来获取seed与condition的关系, 并将结果保存到<strong>res</strong>里. <strong>res-&gt;isTrue</strong>表明种子满足条件, 为真, 否则不满足条件为假. 当判定seed是trueSeed还是falseSeed后则添加相应的约束. 如果无法判定真假, 则跳出循环</p>
-<h2 id="addConstraint"><a href="#addConstraint" class="headerlink" title="addConstraint"></a>addConstraint</h2><pre class=" language-c++"><code class="language-c++">void Executor::addConstraint(ExecutionState &state, ref<Expr> condition) {
-  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(condition)) {
-    if (!CE->isTrue())
-      llvm::report_fatal_error("attempt to add invalid constraint");
-    return;
-  }
+<h2 id="addConstraint"><a href="#addConstraint" class="headerlink" title="addConstraint"></a>addConstraint</h2><pre class=" language-c"><code class="language-c"><span class="token keyword">void</span> Executor<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">addConstraint</span><span class="token punctuation">(</span>ExecutionState <span class="token operator">&amp;</span>state<span class="token punctuation">,</span> ref<span class="token operator">&lt;</span>Expr<span class="token operator">></span> condition<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>ConstantExpr <span class="token operator">*</span>CE <span class="token operator">=</span> dyn_cast<span class="token operator">&lt;</span>ConstantExpr<span class="token operator">></span><span class="token punctuation">(</span>condition<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>CE<span class="token operator">-></span><span class="token function">isTrue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+      llvm<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">report_fatal_error</span><span class="token punctuation">(</span><span class="token string">"attempt to add invalid constraint"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
 
-  // Check to see if this constraint violates seeds.
-  std::map< ExecutionState*, std::vector<SeedInfo> >::iterator it = 
-    seedMap.find(&state);
-  if (it != seedMap.end()) {
-    bool warn = false;
-    for (std::vector<SeedInfo>::iterator siit = it->second.begin(), 
-           siie = it->second.end(); siit != siie; ++siit) {
-      bool res;
-      bool success = 
-        solver->mustBeFalse(state, siit->assignment.evaluate(condition), res);
-      assert(success && "FIXME: Unhandled solver failure");
-      (void) success;
-      if (res) {
-        siit->patchSeed(state, condition, solver);
-        warn = true;
-      }
-    }
-    if (warn)
-      klee_warning("seeds patched for violating constraint"); 
-  }
+  <span class="token comment" spellcheck="true">// Check to see if this constraint violates seeds.</span>
+  std<span class="token punctuation">:</span><span class="token punctuation">:</span>map<span class="token operator">&lt;</span> ExecutionState<span class="token operator">*</span><span class="token punctuation">,</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator it <span class="token operator">=</span> 
+    seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>it <span class="token operator">!=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    bool warn <span class="token operator">=</span> false<span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator siit <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+           siie <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> siit <span class="token operator">!=</span> siie<span class="token punctuation">;</span> <span class="token operator">++</span>siit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      bool res<span class="token punctuation">;</span>
+      bool success <span class="token operator">=</span> 
+        solver<span class="token operator">-></span><span class="token function">mustBeFalse</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> siit<span class="token operator">-></span>assignment<span class="token punctuation">.</span><span class="token function">evaluate</span><span class="token punctuation">(</span>condition<span class="token punctuation">)</span><span class="token punctuation">,</span> res<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token function">assert</span><span class="token punctuation">(</span>success <span class="token operator">&amp;&amp;</span> <span class="token string">"FIXME: Unhandled solver failure"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span> success<span class="token punctuation">;</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>res<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        siit<span class="token operator">-></span><span class="token function">patchSeed</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> condition<span class="token punctuation">,</span> solver<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        warn <span class="token operator">=</span> true<span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>warn<span class="token punctuation">)</span>
+      <span class="token function">klee_warning</span><span class="token punctuation">(</span><span class="token string">"seeds patched for violating constraint"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> 
+  <span class="token punctuation">}</span>
 
-  state.addConstraint(condition);
-  if (ivcEnabled)
-    doImpliedValueConcretization(state, condition, 
-                                 ConstantExpr::alloc(1, Expr::Bool));
-}</code></pre>
+  state<span class="token punctuation">.</span><span class="token function">addConstraint</span><span class="token punctuation">(</span>condition<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>ivcEnabled<span class="token punctuation">)</span>
+    <span class="token function">doImpliedValueConcretization</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> condition<span class="token punctuation">,</span> 
+                                 ConstantExpr<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">alloc</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> Expr<span class="token punctuation">:</span><span class="token punctuation">:</span>Bool<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
 <p>在<strong>addConstraint</strong>里, 使用<strong>seedMap</strong>来取得state对应的seed. 并用<strong>solver-&gt;mustBeFalse(state, siit-&gt;assignment.evaluate(condition), res);</strong>判断seed与该condition是否满足永假关系, 也即约束是否跟seed相违背. 如果相违背则<strong>patchSeed</strong>并输出警告信息</p>
 <h2 id="executeGetValue"><a href="#executeGetValue" class="headerlink" title="executeGetValue"></a>executeGetValue</h2><p><strong>executeGetValue</strong>仅在<strong>SpecialFunctionHandler::handleGetValue</strong>中用到</p>
-<pre class=" language-c++"><code class="language-c++">  add("klee_get_valuef", handleGetValue, true),
-  add("klee_get_valued", handleGetValue, true),
-  add("klee_get_valuel", handleGetValue, true),
-  add("klee_get_valuell", handleGetValue, true),
-  add("klee_get_value_i32", handleGetValue, true),
-  add("klee_get_value_i64", handleGetValue, true),
-......
-void SpecialFunctionHandler::handleGetValue(ExecutionState &state,
-                                            KInstruction *target,
-                                            std::vector<ref<Expr> > &arguments) {
-  assert(arguments.size()==1 &&
-         "invalid number of arguments to klee_get_value");
+<pre class=" language-c"><code class="language-c">  <span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"klee_get_valuef"</span><span class="token punctuation">,</span> handleGetValue<span class="token punctuation">,</span> true<span class="token punctuation">)</span><span class="token punctuation">,</span>
+  <span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"klee_get_valued"</span><span class="token punctuation">,</span> handleGetValue<span class="token punctuation">,</span> true<span class="token punctuation">)</span><span class="token punctuation">,</span>
+  <span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"klee_get_valuel"</span><span class="token punctuation">,</span> handleGetValue<span class="token punctuation">,</span> true<span class="token punctuation">)</span><span class="token punctuation">,</span>
+  <span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"klee_get_valuell"</span><span class="token punctuation">,</span> handleGetValue<span class="token punctuation">,</span> true<span class="token punctuation">)</span><span class="token punctuation">,</span>
+  <span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"klee_get_value_i32"</span><span class="token punctuation">,</span> handleGetValue<span class="token punctuation">,</span> true<span class="token punctuation">)</span><span class="token punctuation">,</span>
+  <span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"klee_get_value_i64"</span><span class="token punctuation">,</span> handleGetValue<span class="token punctuation">,</span> true<span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token keyword">void</span> SpecialFunctionHandler<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">handleGetValue</span><span class="token punctuation">(</span>ExecutionState <span class="token operator">&amp;</span>state<span class="token punctuation">,</span>
+                                            KInstruction <span class="token operator">*</span>target<span class="token punctuation">,</span>
+                                            std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>ref<span class="token operator">&lt;</span>Expr<span class="token operator">></span> <span class="token operator">></span> <span class="token operator">&amp;</span>arguments<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token function">assert</span><span class="token punctuation">(</span>arguments<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">1</span> <span class="token operator">&amp;&amp;</span>
+         <span class="token string">"invalid number of arguments to klee_get_value"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  executor.executeGetValue(state, arguments[0], target);
-}</code></pre>
+  executor<span class="token punctuation">.</span><span class="token function">executeGetValue</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> arguments<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> target<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
 <p>arguments[0]则是<strong>klee_get_value</strong>的第一个参数. 也就是通过<strong>executeGetValue</strong>来获取对应的符号的值</p>
-<pre class=" language-c++"><code class="language-c++">void Executor::executeGetValue(ExecutionState &state,
-                               ref<Expr> e,
-                               KInstruction *target) {
-  e = state.constraints.simplifyExpr(e);
-  std::map< ExecutionState*, std::vector<SeedInfo> >::iterator it = 
-    seedMap.find(&state);
-  if (it==seedMap.end() || isa<ConstantExpr>(e)) {
-    ref<ConstantExpr> value;
-    bool success = solver->getValue(state, e, value);
-    assert(success && "FIXME: Unhandled solver failure");
-    (void) success;
-    bindLocal(target, state, value);
-  } else {
-    std::set< ref<Expr> > values;
-    for (std::vector<SeedInfo>::iterator siit = it->second.begin(), 
-           siie = it->second.end(); siit != siie; ++siit) {
-      ref<ConstantExpr> value;
-      bool success = 
-        solver->getValue(state, siit->assignment.evaluate(e), value);
-      assert(success && "FIXME: Unhandled solver failure");
-      (void) success;
-      values.insert(value);
-    }
+<pre class=" language-c"><code class="language-c"><span class="token keyword">void</span> Executor<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">executeGetValue</span><span class="token punctuation">(</span>ExecutionState <span class="token operator">&amp;</span>state<span class="token punctuation">,</span>
+                               ref<span class="token operator">&lt;</span>Expr<span class="token operator">></span> e<span class="token punctuation">,</span>
+                               KInstruction <span class="token operator">*</span>target<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  e <span class="token operator">=</span> state<span class="token punctuation">.</span>constraints<span class="token punctuation">.</span><span class="token function">simplifyExpr</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  std<span class="token punctuation">:</span><span class="token punctuation">:</span>map<span class="token operator">&lt;</span> ExecutionState<span class="token operator">*</span><span class="token punctuation">,</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator it <span class="token operator">=</span> 
+    seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>it<span class="token operator">==</span>seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">||</span> isa<span class="token operator">&lt;</span>ConstantExpr<span class="token operator">></span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    ref<span class="token operator">&lt;</span>ConstantExpr<span class="token operator">></span> value<span class="token punctuation">;</span>
+    bool success <span class="token operator">=</span> solver<span class="token operator">-></span><span class="token function">getValue</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> e<span class="token punctuation">,</span> value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">assert</span><span class="token punctuation">(</span>success <span class="token operator">&amp;&amp;</span> <span class="token string">"FIXME: Unhandled solver failure"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span> success<span class="token punctuation">;</span>
+    <span class="token function">bindLocal</span><span class="token punctuation">(</span>target<span class="token punctuation">,</span> state<span class="token punctuation">,</span> value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>set<span class="token operator">&lt;</span> ref<span class="token operator">&lt;</span>Expr<span class="token operator">></span> <span class="token operator">></span> values<span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator siit <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+           siie <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> siit <span class="token operator">!=</span> siie<span class="token punctuation">;</span> <span class="token operator">++</span>siit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      ref<span class="token operator">&lt;</span>ConstantExpr<span class="token operator">></span> value<span class="token punctuation">;</span>
+      bool success <span class="token operator">=</span> 
+        solver<span class="token operator">-></span><span class="token function">getValue</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> siit<span class="token operator">-></span>assignment<span class="token punctuation">.</span><span class="token function">evaluate</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">,</span> value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token function">assert</span><span class="token punctuation">(</span>success <span class="token operator">&amp;&amp;</span> <span class="token string">"FIXME: Unhandled solver failure"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span> success<span class="token punctuation">;</span>
+      values<span class="token punctuation">.</span><span class="token function">insert</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
 
-    std::vector< ref<Expr> > conditions;
-    for (std::set< ref<Expr> >::iterator vit = values.begin(), 
-           vie = values.end(); vit != vie; ++vit)
-      conditions.push_back(EqExpr::create(e, *vit));
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span> ref<span class="token operator">&lt;</span>Expr<span class="token operator">></span> <span class="token operator">></span> conditions<span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>set<span class="token operator">&lt;</span> ref<span class="token operator">&lt;</span>Expr<span class="token operator">></span> <span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator vit <span class="token operator">=</span> values<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+           vie <span class="token operator">=</span> values<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> vit <span class="token operator">!=</span> vie<span class="token punctuation">;</span> <span class="token operator">++</span>vit<span class="token punctuation">)</span>
+      conditions<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span>EqExpr<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">create</span><span class="token punctuation">(</span>e<span class="token punctuation">,</span> <span class="token operator">*</span>vit<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    std::vector<ExecutionState*> branches;
-    branch(state, conditions, branches);
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>ExecutionState<span class="token operator">*</span><span class="token operator">></span> branches<span class="token punctuation">;</span>
+    <span class="token function">branch</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> conditions<span class="token punctuation">,</span> branches<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    std::vector<ExecutionState*>::iterator bit = branches.begin();
-    for (std::set< ref<Expr> >::iterator vit = values.begin(), 
-           vie = values.end(); vit != vie; ++vit) {
-      ExecutionState *es = *bit;
-      if (es)
-        bindLocal(target, *es, *vit);
-      ++bit;
-    }
-  }
-}</code></pre>
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>ExecutionState<span class="token operator">*</span><span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator bit <span class="token operator">=</span> branches<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>set<span class="token operator">&lt;</span> ref<span class="token operator">&lt;</span>Expr<span class="token operator">></span> <span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator vit <span class="token operator">=</span> values<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+           vie <span class="token operator">=</span> values<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> vit <span class="token operator">!=</span> vie<span class="token punctuation">;</span> <span class="token operator">++</span>vit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      ExecutionState <span class="token operator">*</span>es <span class="token operator">=</span> <span class="token operator">*</span>bit<span class="token punctuation">;</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>es<span class="token punctuation">)</span>
+        <span class="token function">bindLocal</span><span class="token punctuation">(</span>target<span class="token punctuation">,</span> <span class="token operator">*</span>es<span class="token punctuation">,</span> <span class="token operator">*</span>vit<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token operator">++</span>bit<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
 <p>类似, 同<strong>solver-&gt;getValue(state, siit-&gt;assignment.evaluate(e), value);</strong></p>
 <h2 id="updateStates"><a href="#updateStates" class="headerlink" title="updateStates"></a>updateStates</h2><p>在<strong>updateStates</strong>里进行的操作是将seedMap里的state给擦除掉. </p>
-<pre class=" language-c++"><code class="language-c++">void Executor::updateStates(ExecutionState *current) {
-  if (searcher) {
-    searcher->update(current, addedStates, removedStates);
-    searcher->update(nullptr, continuedStates, pausedStates);
-    pausedStates.clear();
-    continuedStates.clear();
-  }
+<pre class=" language-c"><code class="language-c"><span class="token keyword">void</span> Executor<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">updateStates</span><span class="token punctuation">(</span>ExecutionState <span class="token operator">*</span>current<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span>searcher<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    searcher<span class="token operator">-></span><span class="token function">update</span><span class="token punctuation">(</span>current<span class="token punctuation">,</span> addedStates<span class="token punctuation">,</span> removedStates<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    searcher<span class="token operator">-></span><span class="token function">update</span><span class="token punctuation">(</span>nullptr<span class="token punctuation">,</span> continuedStates<span class="token punctuation">,</span> pausedStates<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    pausedStates<span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    continuedStates<span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
 
-  states.insert(addedStates.begin(), addedStates.end());
-  addedStates.clear();
+  states<span class="token punctuation">.</span><span class="token function">insert</span><span class="token punctuation">(</span>addedStates<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> addedStates<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  addedStates<span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  // 逐个擦除掉
-  for (std::vector<ExecutionState *>::iterator it = removedStates.begin(),
-                                               ie = removedStates.end();
-       it != ie; ++it) {
-    ExecutionState *es = *it;
-    std::set<ExecutionState*>::iterator it2 = states.find(es);
-    assert(it2!=states.end());
-    states.erase(it2);
-    // 在seedMap里擦除掉es
-    std::map<ExecutionState*, std::vector<SeedInfo> >::iterator it3 = 
-      seedMap.find(es);
-    if (it3 != seedMap.end())
-      seedMap.erase(it3);
-    processTree->remove(es->ptreeNode);
-    delete es;
-  }
-  removedStates.clear();
-}</code></pre>
+  <span class="token comment" spellcheck="true">// 逐个擦除掉</span>
+  <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>ExecutionState <span class="token operator">*</span><span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator it <span class="token operator">=</span> removedStates<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                                               ie <span class="token operator">=</span> removedStates<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+       it <span class="token operator">!=</span> ie<span class="token punctuation">;</span> <span class="token operator">++</span>it<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    ExecutionState <span class="token operator">*</span>es <span class="token operator">=</span> <span class="token operator">*</span>it<span class="token punctuation">;</span>
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>set<span class="token operator">&lt;</span>ExecutionState<span class="token operator">*</span><span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator it2 <span class="token operator">=</span> states<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span>es<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">assert</span><span class="token punctuation">(</span>it2<span class="token operator">!=</span>states<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    states<span class="token punctuation">.</span><span class="token function">erase</span><span class="token punctuation">(</span>it2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// 在seedMap里擦除掉es</span>
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>map<span class="token operator">&lt;</span>ExecutionState<span class="token operator">*</span><span class="token punctuation">,</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator it3 <span class="token operator">=</span> 
+      seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span>es<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>it3 <span class="token operator">!=</span> seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+      seedMap<span class="token punctuation">.</span><span class="token function">erase</span><span class="token punctuation">(</span>it3<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    processTree<span class="token operator">-></span><span class="token function">remove</span><span class="token punctuation">(</span>es<span class="token operator">-></span>ptreeNode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    delete es<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  removedStates<span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
 <p><strong>searcher-&gt;update</strong>会将需要擦除的<strong>removedStates</strong>列出来, 然后在循环里将<strong>removeStates</strong>从<strong>states</strong>中擦除, 如果在<strong>seedMap</strong>里有<strong>removedStates</strong>的话, 也一并擦除掉. </p>
 <h2 id="terminateState相关"><a href="#terminateState相关" class="headerlink" title="terminateState相关"></a>terminateState相关</h2><p><strong>terminateState</strong>, <strong>terminateState</strong>, <strong>terminateStateOnExit</strong>使用<strong>seedMap</strong>都是对state进行擦除做的清理工作. 因为这个state已经被终结了, 因此会对seedMap进行擦除, 以提高效率</p>
 <h2 id="executeMakeSymbolic"><a href="#executeMakeSymbolic" class="headerlink" title="executeMakeSymbolic"></a>executeMakeSymbolic</h2><p><strong>executeMakeSymbolic</strong>只由<strong>handleMakeSymbolic</strong>一处调用, 而<strong>handleMakeSymbolic</strong>只在处理<strong>klee_make_symbolic</strong>时会起作用. </p>
-<pre class=" language-c++"><code class="language-c++">add("klee_make_symbolic", handleMakeSymbolic, false),</code></pre>
+<pre class=" language-c"><code class="language-c"><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"klee_make_symbolic"</span><span class="token punctuation">,</span> handleMakeSymbolic<span class="token punctuation">,</span> false<span class="token punctuation">)</span><span class="token punctuation">,</span></code></pre>
 <p>因此可以确定的是<strong>executeMakeSymbolic</strong>也只有在处理<strong>klee_make_symbolic</strong>时会触发. </p>
-<pre class=" language-c++"><code class="language-c++">void Executor::executeMakeSymbolic(ExecutionState &state, 
-                                   const MemoryObject *mo,
-                                   const std::string &name) {
-  // Create a new object state for the memory object (instead of a copy).
-  if (!replayKTest) {
-    // Find a unique name for this array.  First try the original name,
-    // or if that fails try adding a unique identifier.
-    unsigned id = 0;
-    std::string uniqueName = name;
-    while (!state.arrayNames.insert(uniqueName).second) {
-      uniqueName = name + "_" + llvm::utostr(++id);
-    }
-    const Array *array = arrayCache.CreateArray(uniqueName, mo->size);
-    bindObjectInState(state, mo, false, array);
-    state.addSymbolic(mo, array);
+<pre class=" language-c"><code class="language-c"><span class="token keyword">void</span> Executor<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">executeMakeSymbolic</span><span class="token punctuation">(</span>ExecutionState <span class="token operator">&amp;</span>state<span class="token punctuation">,</span> 
+                                   <span class="token keyword">const</span> MemoryObject <span class="token operator">*</span>mo<span class="token punctuation">,</span>
+                                   <span class="token keyword">const</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>string <span class="token operator">&amp;</span>name<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token comment" spellcheck="true">// Create a new object state for the memory object (instead of a copy).</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>replayKTest<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// Find a unique name for this array.  First try the original name,</span>
+    <span class="token comment" spellcheck="true">// or if that fails try adding a unique identifier.</span>
+    <span class="token keyword">unsigned</span> id <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>string uniqueName <span class="token operator">=</span> name<span class="token punctuation">;</span>
+    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token operator">!</span>state<span class="token punctuation">.</span>arrayNames<span class="token punctuation">.</span><span class="token function">insert</span><span class="token punctuation">(</span>uniqueName<span class="token punctuation">)</span><span class="token punctuation">.</span>second<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      uniqueName <span class="token operator">=</span> name <span class="token operator">+</span> <span class="token string">"_"</span> <span class="token operator">+</span> llvm<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">utostr</span><span class="token punctuation">(</span><span class="token operator">++</span>id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">const</span> Array <span class="token operator">*</span>array <span class="token operator">=</span> arrayCache<span class="token punctuation">.</span><span class="token function">CreateArray</span><span class="token punctuation">(</span>uniqueName<span class="token punctuation">,</span> mo<span class="token operator">-></span>size<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">bindObjectInState</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> mo<span class="token punctuation">,</span> false<span class="token punctuation">,</span> array<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    state<span class="token punctuation">.</span><span class="token function">addSymbolic</span><span class="token punctuation">(</span>mo<span class="token punctuation">,</span> array<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    std::map< ExecutionState*, std::vector<SeedInfo> >::iterator it = 
-      seedMap.find(&state);
-    if (it!=seedMap.end()) { // In seed mode we need to add this as a
-                             // binding.
-      for (std::vector<SeedInfo>::iterator siit = it->second.begin(), 
-             siie = it->second.end(); siit != siie; ++siit) {
-        SeedInfo &si = *siit;
-        // 如果指定NamedSeedMatching 获取seed中跟mo->name相同的对象
-        // 否则, 从上至下依次返回mo的对象
-        KTestObject *obj = si.getNextInput(mo, NamedSeedMatching);
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>map<span class="token operator">&lt;</span> ExecutionState<span class="token operator">*</span><span class="token punctuation">,</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span> <span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator it <span class="token operator">=</span> 
+      seedMap<span class="token punctuation">.</span><span class="token function">find</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>it<span class="token operator">!=</span>seedMap<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token comment" spellcheck="true">// In seed mode we need to add this as a</span>
+                             <span class="token comment" spellcheck="true">// binding.</span>
+      <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator siit <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+             siie <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> siit <span class="token operator">!=</span> siie<span class="token punctuation">;</span> <span class="token operator">++</span>siit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        SeedInfo <span class="token operator">&amp;</span>si <span class="token operator">=</span> <span class="token operator">*</span>siit<span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">// 如果指定NamedSeedMatching 获取seed中跟mo->name相同的对象</span>
+        <span class="token comment" spellcheck="true">// 否则, 从上至下依次返回mo的对象</span>
+        KTestObject <span class="token operator">*</span>obj <span class="token operator">=</span> si<span class="token punctuation">.</span><span class="token function">getNextInput</span><span class="token punctuation">(</span>mo<span class="token punctuation">,</span> NamedSeedMatching<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-        if (!obj) { // 没有可取对象
-          if (ZeroSeedExtension) {
-            std::vector<unsigned char> &values = si.assignment.bindings[array];
-            values = std::vector<unsigned char>(mo->size, '\0');
-          } else if (!AllowSeedExtension) {
-            // seed跟内存对象mo的对象数量不一致
-            terminateStateOnError(state, "ran out of inputs during seeding",
-                                  User);
-            break;
-          }
-        } else {
-          if (obj->numBytes != mo->size &&  // 对象大小不匹配
-              ((!(AllowSeedExtension || ZeroSeedExtension)
-                && obj->numBytes < mo->size) || // obj大小 < mo大小 又不准扩展种子
-               (!AllowSeedTruncation && obj->numBytes > mo->size))) { // obj大小 > mo大小, 又不准截断种子
-               // 输出错误信息并退出
-        std::stringstream msg;
-        msg << "replace size mismatch: "
-        << mo->name << "[" << mo->size << "]"
-        << " vs " << obj->name << "[" << obj->numBytes << "]"
-        << " in test\n";
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>obj<span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token comment" spellcheck="true">// 没有可取对象</span>
+          <span class="token keyword">if</span> <span class="token punctuation">(</span>ZeroSeedExtension<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span><span class="token keyword">unsigned</span> <span class="token keyword">char</span><span class="token operator">></span> <span class="token operator">&amp;</span>values <span class="token operator">=</span> si<span class="token punctuation">.</span>assignment<span class="token punctuation">.</span>bindings<span class="token punctuation">[</span>array<span class="token punctuation">]</span><span class="token punctuation">;</span>
+            values <span class="token operator">=</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span><span class="token keyword">unsigned</span> <span class="token keyword">char</span><span class="token operator">></span><span class="token punctuation">(</span>mo<span class="token operator">-></span>size<span class="token punctuation">,</span> <span class="token string">'\0'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>AllowSeedExtension<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">// seed跟内存对象mo的对象数量不一致</span>
+            <span class="token function">terminateStateOnError</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> <span class="token string">"ran out of inputs during seeding"</span><span class="token punctuation">,</span>
+                                  User<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">break</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+          <span class="token keyword">if</span> <span class="token punctuation">(</span>obj<span class="token operator">-></span>numBytes <span class="token operator">!=</span> mo<span class="token operator">-></span>size <span class="token operator">&amp;&amp;</span>  <span class="token comment" spellcheck="true">// 对象大小不匹配</span>
+              <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>AllowSeedExtension <span class="token operator">||</span> ZeroSeedExtension<span class="token punctuation">)</span>
+                <span class="token operator">&amp;&amp;</span> obj<span class="token operator">-></span>numBytes <span class="token operator">&lt;</span> mo<span class="token operator">-></span>size<span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token comment" spellcheck="true">// obj大小 &lt; mo大小 又不准扩展种子</span>
+               <span class="token punctuation">(</span><span class="token operator">!</span>AllowSeedTruncation <span class="token operator">&amp;&amp;</span> obj<span class="token operator">-></span>numBytes <span class="token operator">></span> mo<span class="token operator">-></span>size<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token comment" spellcheck="true">// obj大小 > mo大小, 又不准截断种子</span>
+               <span class="token comment" spellcheck="true">// 输出错误信息并退出</span>
+        std<span class="token punctuation">:</span><span class="token punctuation">:</span>stringstream msg<span class="token punctuation">;</span>
+        msg <span class="token operator">&lt;&lt;</span> <span class="token string">"replace size mismatch: "</span>
+        <span class="token operator">&lt;&lt;</span> mo<span class="token operator">-></span>name <span class="token operator">&lt;&lt;</span> <span class="token string">"["</span> <span class="token operator">&lt;&lt;</span> mo<span class="token operator">-></span>size <span class="token operator">&lt;&lt;</span> <span class="token string">"]"</span>
+        <span class="token operator">&lt;&lt;</span> <span class="token string">" vs "</span> <span class="token operator">&lt;&lt;</span> obj<span class="token operator">-></span>name <span class="token operator">&lt;&lt;</span> <span class="token string">"["</span> <span class="token operator">&lt;&lt;</span> obj<span class="token operator">-></span>numBytes <span class="token operator">&lt;&lt;</span> <span class="token string">"]"</span>
+        <span class="token operator">&lt;&lt;</span> <span class="token string">" in test\n"</span><span class="token punctuation">;</span>
 
-            terminateStateOnError(state, msg.str(), User);
-            break;
-          } else {
-            // 开始处理 seed, 进行绑定
-            std::vector<unsigned char> &values = si.assignment.bindings[array];
-            values.insert(values.begin(), obj->bytes, 
-                          obj->bytes + std::min(obj->numBytes, mo->size));
-            if (ZeroSeedExtension) {
-              for (unsigned i=obj->numBytes; i<mo->size; ++i)
-                values.push_back('\0');
-            }
-          }
-        }
-      }
-    }
-  } else { ... // replay ktest 分支
-  }
-}</code></pre>
+            <span class="token function">terminateStateOnError</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> msg<span class="token punctuation">.</span><span class="token function">str</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> User<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">break</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">// 开始处理 seed, 进行绑定</span>
+            std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span><span class="token keyword">unsigned</span> <span class="token keyword">char</span><span class="token operator">></span> <span class="token operator">&amp;</span>values <span class="token operator">=</span> si<span class="token punctuation">.</span>assignment<span class="token punctuation">.</span>bindings<span class="token punctuation">[</span>array<span class="token punctuation">]</span><span class="token punctuation">;</span>
+            values<span class="token punctuation">.</span><span class="token function">insert</span><span class="token punctuation">(</span>values<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> obj<span class="token operator">-></span>bytes<span class="token punctuation">,</span> 
+                          obj<span class="token operator">-></span>bytes <span class="token operator">+</span> std<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">min</span><span class="token punctuation">(</span>obj<span class="token operator">-></span>numBytes<span class="token punctuation">,</span> mo<span class="token operator">-></span>size<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>ZeroSeedExtension<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+              <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">unsigned</span> i<span class="token operator">=</span>obj<span class="token operator">-></span>numBytes<span class="token punctuation">;</span> i<span class="token operator">&lt;</span>mo<span class="token operator">-></span>size<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span>
+                values<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span><span class="token string">'\0'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+          <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token comment" spellcheck="true">// replay ktest 分支</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
 <p>在<strong>executeMakeSymbolic</strong>中, 首先会根据<strong>seedMap</strong>提取出所有的<strong>obj</strong>, 并与<strong>mo</strong>进行比较, 如果跟<strong>mo</strong>的大小不匹配, 就会出现一些错误信息. 在真正处理seed时则会将其绑定给<strong>si.assignment.bindings[array]</strong>. 如果没有seed模式. 也就只能执行前半部分</p>
-<pre class=" language-c++"><code class="language-c++">    unsigned id = 0;
-    std::string uniqueName = name;
-    while (!state.arrayNames.insert(uniqueName).second) {
-      uniqueName = name + "_" + llvm::utostr(++id);
-    }
-    const Array *array = arrayCache.CreateArray(uniqueName, mo->size);
-    bindObjectInState(state, mo, false, array);
-    state.addSymbolic(mo, array);</code></pre>
-</p></div><div class="share"><span>分享到</span>&nbsp;<span class="soc"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></span><span class="soc"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></span><span class="soc"><a href="http://twitter.com/home?status=https://vancir.github.io/klee-seed-mode.html%20Vancir%20KLEE中Seed模式流程解析" class="fa fa-twitter"></a></span></div><div class="pagination"><p class="clearfix"><span class="pre pagbuttons"><a role="navigation" href="/klee-seed-option.html" title="KLEE中Seed模式相关选项介绍"><i class="fa fa-angle-double-left"></i>&nbsp;上一篇: KLEE中Seed模式相关选项介绍</a></span><span>&nbsp;</span><span class="next pagbuttons"><a role="navigation" href="/brief-intro-to-vuldeepecker.html" title="论文: VulDeePecker基于深度学习的漏洞检测系统">下一篇: 论文: VulDeePecker基于深度学习的漏洞检测系统&nbsp;<i class="fa fa-angle-double-right"></i></a></span></p></div></div></div></div><div class="visible-xs site-bottom-footer"><footer><p>&copy;&nbsp;2020&nbsp;<a target="_blank" href="https://vancir.github.io" rel="noopener noreferrer">Vancir</a></p><p>Theme&nbsp;<a target="_blank" href="https://github.com/SumiMakito/hexo-theme-typography" rel="noopener noreferrer">Typography</a>&nbsp;by&nbsp;<a target="_blank" href="https://www.keep.moe" rel="noopener noreferrer">Makito</a></p><p>Proudly published with&nbsp;<a target="_blank" href="https://hexo.io" rel="noopener noreferrer">Hexo</a></p></footer></div></div></div></div><script src="/js/jquery-3.1.0.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script><script src="/js/google-analytics.js"></script><script src="/js/typography.js"></script></body></html>
+<pre class=" language-c"><code class="language-c">    <span class="token keyword">unsigned</span> id <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>string uniqueName <span class="token operator">=</span> name<span class="token punctuation">;</span>
+    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token operator">!</span>state<span class="token punctuation">.</span>arrayNames<span class="token punctuation">.</span><span class="token function">insert</span><span class="token punctuation">(</span>uniqueName<span class="token punctuation">)</span><span class="token punctuation">.</span>second<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      uniqueName <span class="token operator">=</span> name <span class="token operator">+</span> <span class="token string">"_"</span> <span class="token operator">+</span> llvm<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">utostr</span><span class="token punctuation">(</span><span class="token operator">++</span>id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">const</span> Array <span class="token operator">*</span>array <span class="token operator">=</span> arrayCache<span class="token punctuation">.</span><span class="token function">CreateArray</span><span class="token punctuation">(</span>uniqueName<span class="token punctuation">,</span> mo<span class="token operator">-></span>size<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">bindObjectInState</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> mo<span class="token punctuation">,</span> false<span class="token punctuation">,</span> array<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    state<span class="token punctuation">.</span><span class="token function">addSymbolic</span><span class="token punctuation">(</span>mo<span class="token punctuation">,</span> array<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h2 id="Seed模式相关选项"><a href="#Seed模式相关选项" class="headerlink" title="Seed模式相关选项"></a>Seed模式相关选项</h2><p>测试使用的命令为:</p>
+<pre class=" language-bash"><code class="language-bash">klee -seed-out<span class="token operator">=</span>./klee-out-0/test000002.ktest -only-seed -only-replay-seeds get_sign.bc</code></pre>
+<p>测试结果:</p>
+<pre class=" language-bash"><code class="language-bash">varas@varas-virtual-machine:~/Downloads/klee/examples/get_sign$ klee -seed-out<span class="token operator">=</span>./klee-out-0/test000002.ktest -only-seed -only-replay-seeds get_sign.bc 
+KLEE: output directory is <span class="token string">"/home/varas/Downloads/klee/examples/get_sign/klee-out-6"</span>
+KLEE: Using STP solver backend
+KLEE: KLEE: using 1 seeds
+
+KLEE: seeding <span class="token keyword">done</span> <span class="token punctuation">(</span>0 states remain<span class="token punctuation">)</span>
+
+KLEE: done: total instructions <span class="token operator">=</span> 21
+KLEE: done: completed paths <span class="token operator">=</span> 1
+KLEE: done: generated tests <span class="token operator">=</span> 1
+varas@varas-virtual-machine:~/Downloads/klee/examples/get_sign$ <span class="token function">cd</span> klee-out-6/
+varas@varas-virtual-machine:~/Downloads/klee/examples/get_sign/klee-out-6$ <span class="token function">ls</span>
+assembly.ll  info  messages.txt  run.istats  run.stats  test000001.ktest  warnings.txt
+varas@varas-virtual-machine:~/Downloads/klee/examples/get_sign/klee-out-6$ ktest-tool test000001.ktest 
+ktest <span class="token function">file</span> <span class="token keyword">:</span> <span class="token string">'test000001.ktest'</span>
+args       <span class="token keyword">:</span> <span class="token punctuation">[</span><span class="token string">'get_sign.bc'</span><span class="token punctuation">]</span>
+num objects: 1
+object    0: name: <span class="token string">'a'</span>
+object    0: size: 4
+object    0: data: <span class="token string">'\x01\x01\x01\x01'</span>
+varas@varas-virtual-machine:~/Downloads/klee/examples/get_sign/klee-out-6$ </code></pre>
+<h3 id="seed-out"><a href="#seed-out" class="headerlink" title="-seed-out"></a>-seed-out</h3><p><strong>-seed-out=</strong>指定的seed文件会保存到<strong>SeedOutFile</strong>中, 在main函数中进行使用. </p>
+<pre class=" language-c"><code class="language-c">  <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>ReplayKTestDir<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token operator">!</span>ReplayKTestFile<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+  <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// 指定了 SeedOutFile 读取 seed 内容</span>
+    std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>KTest <span class="token operator">*</span><span class="token operator">></span> seeds<span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>string<span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator
+           it <span class="token operator">=</span> SeedOutFile<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> ie <span class="token operator">=</span> SeedOutFile<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+         it <span class="token operator">!=</span> ie<span class="token punctuation">;</span> <span class="token operator">++</span>it<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      KTest <span class="token operator">*</span>out <span class="token operator">=</span> <span class="token function">kTest_fromFile</span><span class="token punctuation">(</span>it<span class="token operator">-></span><span class="token function">c_str</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>out<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">klee_error</span><span class="token punctuation">(</span><span class="token string">"unable to open: %s\n"</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token operator">*</span>it<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">c_str</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token comment" spellcheck="true">// SeedOutFile 方式获取 seed</span>
+      seeds<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span>out<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>string<span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>seeds<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token function">klee_message</span><span class="token punctuation">(</span><span class="token string">"KLEE: using %lu seeds\n"</span><span class="token punctuation">,</span> seeds<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment" spellcheck="true">// 使用 seed</span>
+      interpreter<span class="token operator">-></span><span class="token function">useSeeds</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>seeds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>RunInDir <span class="token operator">!=</span> <span class="token string">""</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment" spellcheck="true">// 运行main函数</span>
+    interpreter<span class="token operator">-></span><span class="token function">runFunctionAsMain</span><span class="token punctuation">(</span>mainFn<span class="token punctuation">,</span> pArgc<span class="token punctuation">,</span> pArgv<span class="token punctuation">,</span> pEnvp<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token operator">!</span>seeds<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token function">kTest_free</span><span class="token punctuation">(</span>seeds<span class="token punctuation">.</span><span class="token function">back</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      seeds<span class="token punctuation">.</span><span class="token function">pop_back</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span></code></pre>
+<h3 id="only-seed"><a href="#only-seed" class="headerlink" title="-only-seed"></a>-only-seed</h3><p><strong>-only-seed</strong>与布尔值<strong>OnlySeed</strong>绑定, 默认关闭. </p>
+<p>描述是<strong>在seed模式结束后, 不做常规搜索直接停止执行</strong></p>
+<pre class=" language-c"><code class="language-c">  cl<span class="token punctuation">:</span><span class="token punctuation">:</span>opt<span class="token operator">&lt;</span>bool<span class="token operator">></span>
+  <span class="token function">OnlySeed</span><span class="token punctuation">(</span><span class="token string">"only-seed"</span><span class="token punctuation">,</span>
+       cl<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">init</span><span class="token punctuation">(</span>false<span class="token punctuation">)</span><span class="token punctuation">,</span>
+           cl<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">desc</span><span class="token punctuation">(</span><span class="token string">"Stop execution after seeding is done without doing regular search (default=off)."</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<p>仅在<strong>Executor:run()</strong>里使用到</p>
+<pre class=" language-c"><code class="language-c">    <span class="token keyword">if</span> <span class="token punctuation">(</span>OnlySeed<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token function">doDumpStates</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span></code></pre>
+<p>再来看<strong>doDumpStates()</strong></p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">void</span> Executor<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">doDumpStates</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>DumpStatesOnHalt <span class="token operator">||</span> states<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token keyword">return</span><span class="token punctuation">;</span>
+
+  <span class="token function">klee_message</span><span class="token punctuation">(</span><span class="token string">"halting execution, dumping remaining states"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">const</span> <span class="token keyword">auto</span> <span class="token operator">&amp;</span>state <span class="token punctuation">:</span> states<span class="token punctuation">)</span>
+    <span class="token function">terminateStateEarly</span><span class="token punctuation">(</span><span class="token operator">*</span>state<span class="token punctuation">,</span> <span class="token string">"Execution halting."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token function">updateStates</span><span class="token punctuation">(</span>nullptr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p><strong>DumpStatesOnHalt</strong>是默认开启的选项, 在退出时将所有活动的状态都dump成测试用例文件.</p>
+<p>之后的操作是相当于提前终止, 因为<strong>onlySeed</strong>紧接着<strong>seeding done</strong>执行, 因此可以确保在seed模式执行结束后终止其他state</p>
+<h3 id="only-replay-seeds"><a href="#only-replay-seeds" class="headerlink" title="-only-replay-seeds"></a>-only-replay-seeds</h3><p><strong>-only-replay-seed</strong>与布尔值<strong>OnlyReplaySeeds</strong>绑定, 默认关闭. </p>
+<p>描述是<strong>执行时忽略不含有seed的状态</strong></p>
+<pre class=" language-c"><code class="language-c">  cl<span class="token punctuation">:</span><span class="token punctuation">:</span>opt<span class="token operator">&lt;</span>bool<span class="token operator">></span>
+  <span class="token function">OnlyReplaySeeds</span><span class="token punctuation">(</span><span class="token string">"only-replay-seeds"</span><span class="token punctuation">,</span>
+          cl<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">init</span><span class="token punctuation">(</span>false<span class="token punctuation">)</span><span class="token punctuation">,</span>
+                  cl<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">desc</span><span class="token punctuation">(</span><span class="token string">"Discard states that do not have a seed (default=off)."</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<p>仅在<strong>Executor::branch</strong>和<strong>Executor::fork</strong>有用到</p>
+<pre class=" language-c"><code class="language-c"><span class="token keyword">if</span> <span class="token punctuation">(</span>OnlyReplaySeeds<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">unsigned</span> i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">;</span> i<span class="token operator">&lt;</span>N<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>seedMap<span class="token punctuation">.</span><span class="token function">count</span><span class="token punctuation">(</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token function">terminateState</span><span class="token punctuation">(</span><span class="token operator">*</span>result<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      result<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span> 
+<span class="token punctuation">}</span></code></pre>
+<p>手动指定<strong>OnlyReplaySeeds</strong>可以终止状态</p>
+<pre class=" language-c"><code class="language-c"><span class="token comment" spellcheck="true">// Fix branch in only-replay-seed mode, if we don't have both true</span>
+<span class="token comment" spellcheck="true">// and false seeds.</span>
+<span class="token keyword">if</span> <span class="token punctuation">(</span>isSeeding <span class="token operator">&amp;&amp;</span> 
+      <span class="token punctuation">(</span>current<span class="token punctuation">.</span>forkDisabled <span class="token operator">||</span> OnlyReplaySeeds<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> 
+      res <span class="token operator">==</span> Solver<span class="token punctuation">:</span><span class="token punctuation">:</span>Unknown<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    bool trueSeed<span class="token operator">=</span>false<span class="token punctuation">,</span> falseSeed<span class="token operator">=</span>false<span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">// Is seed extension still ok here?</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>std<span class="token punctuation">:</span><span class="token punctuation">:</span>vector<span class="token operator">&lt;</span>SeedInfo<span class="token operator">></span><span class="token punctuation">:</span><span class="token punctuation">:</span>iterator siit <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">begin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> 
+           siie <span class="token operator">=</span> it<span class="token operator">-></span>second<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> siit <span class="token operator">!=</span> siie<span class="token punctuation">;</span> <span class="token operator">++</span>siit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      ref<span class="token operator">&lt;</span>ConstantExpr<span class="token operator">></span> res<span class="token punctuation">;</span>
+      bool success <span class="token operator">=</span> 
+        solver<span class="token operator">-></span><span class="token function">getValue</span><span class="token punctuation">(</span>current<span class="token punctuation">,</span> siit<span class="token operator">-></span>assignment<span class="token punctuation">.</span><span class="token function">evaluate</span><span class="token punctuation">(</span>condition<span class="token punctuation">)</span><span class="token punctuation">,</span> res<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token function">assert</span><span class="token punctuation">(</span>success <span class="token operator">&amp;&amp;</span> <span class="token string">"FIXME: Unhandled solver failure"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span> success<span class="token punctuation">;</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>res<span class="token operator">-></span><span class="token function">isTrue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        trueSeed <span class="token operator">=</span> true<span class="token punctuation">;</span>
+      <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        falseSeed <span class="token operator">=</span> true<span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>trueSeed <span class="token operator">&amp;&amp;</span> falseSeed<span class="token punctuation">)</span>
+        <span class="token keyword">break</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>trueSeed <span class="token operator">&amp;&amp;</span> falseSeed<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token function">assert</span><span class="token punctuation">(</span>trueSeed <span class="token operator">||</span> falseSeed<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      res <span class="token operator">=</span> trueSeed <span class="token operator">?</span> Solver<span class="token punctuation">:</span><span class="token punctuation">:</span>True <span class="token punctuation">:</span> Solver<span class="token punctuation">:</span><span class="token punctuation">:</span>False<span class="token punctuation">;</span>
+      <span class="token function">addConstraint</span><span class="token punctuation">(</span>current<span class="token punctuation">,</span> trueSeed <span class="token operator">?</span> condition <span class="token punctuation">:</span> Expr<span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token function">createIsZero</span><span class="token punctuation">(</span>condition<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span></code></pre>
+</p></div><div class="share"><span>分享到</span>&nbsp;<span class="soc"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></span><span class="soc"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></span><span class="soc"><a href="http://twitter.com/home?status=https://vancir.github.io/klee-seed-mode.html%20Vancir%20KLEE中Seed模式流程解析及相关选项介绍" class="fa fa-twitter"></a></span></div><div class="pagination"><p class="clearfix"><span class="pre pagbuttons"><a role="navigation" href="/zesti-reading-note.html" title="论文: Zesti用于改进回归测试的符号执行方案"><i class="fa fa-angle-double-left"></i>&nbsp;上一篇: 论文: Zesti用于改进回归测试的符号执行方案</a></span><span>&nbsp;</span><span class="next pagbuttons"><a role="navigation" href="/brief-intro-to-vuldeepecker.html" title="论文: VulDeePecker基于深度学习的漏洞检测系统">下一篇: 论文: VulDeePecker基于深度学习的漏洞检测系统&nbsp;<i class="fa fa-angle-double-right"></i></a></span></p></div></div></div></div><div class="visible-xs site-bottom-footer"><footer><p>&copy;&nbsp;2020&nbsp;<a target="_blank" href="https://vancir.github.io" rel="noopener noreferrer">Vancir</a></p><p>Theme&nbsp;<a target="_blank" href="https://github.com/SumiMakito/hexo-theme-typography" rel="noopener noreferrer">Typography</a>&nbsp;by&nbsp;<a target="_blank" href="https://www.keep.moe" rel="noopener noreferrer">Makito</a></p><p>Proudly published with&nbsp;<a target="_blank" href="https://hexo.io" rel="noopener noreferrer">Hexo</a></p></footer></div></div></div></div><script src="/js/jquery-3.1.0.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script><script src="/js/google-analytics.js"></script><script src="/js/typography.js"></script></body></html>

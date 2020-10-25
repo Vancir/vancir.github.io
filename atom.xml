@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://vancir.github.io/"/>
-  <updated>2020-10-25T05:45:01.509Z</updated>
+  <updated>2020-10-25T09:58:18.792Z</updated>
   <id>https://vancir.github.io/</id>
   
   <author>
@@ -21,7 +21,7 @@
     <link href="https://vancir.github.io/what-does-afl-docs-say.html"/>
     <id>https://vancir.github.io/what-does-afl-docs-say.html</id>
     <published>2020-04-01T15:11:17.000Z</published>
-    <updated>2020-10-25T05:45:01.509Z</updated>
+    <updated>2020-10-25T09:58:18.792Z</updated>
     
     <summary type="html">
     
@@ -41,10 +41,10 @@
   
   <entry>
     <title>论文: Understanding Linux Malware</title>
-    <link href="https://vancir.github.io/paper-understanding-linux-malware.html"/>
-    <id>https://vancir.github.io/paper-understanding-linux-malware.html</id>
+    <link href="https://vancir.github.io/understanding-linux-malware.html"/>
+    <id>https://vancir.github.io/understanding-linux-malware.html</id>
     <published>2020-03-23T15:38:33.000Z</published>
-    <updated>2020-10-25T05:45:01.509Z</updated>
+    <updated>2020-10-25T09:58:18.792Z</updated>
     
     <summary type="html">
     
@@ -67,7 +67,7 @@
     <link href="https://vancir.github.io/zesti-reading-note.html"/>
     <id>https://vancir.github.io/zesti-reading-note.html</id>
     <published>2018-09-09T15:23:42.000Z</published>
-    <updated>2020-10-25T05:45:01.513Z</updated>
+    <updated>2020-10-25T09:58:18.792Z</updated>
     
     <summary type="html">
     
@@ -86,35 +86,11 @@
   </entry>
   
   <entry>
-    <title>KLEE中Seed模式相关选项介绍</title>
-    <link href="https://vancir.github.io/klee-seed-option.html"/>
-    <id>https://vancir.github.io/klee-seed-option.html</id>
-    <published>2018-09-09T15:23:20.000Z</published>
-    <updated>2020-10-25T05:45:01.509Z</updated>
-    
-    <summary type="html">
-    
-      
-      
-        
-        
-          &lt;p&gt;测试使用的命令为:&lt;/p&gt;
-&lt;pre class=&quot; language-bash&quot;&gt;&lt;code class=&quot;language-bash&quot;&gt;klee -seed-out&lt;span class=&quot;token
-        
-      
-    
-    </summary>
-    
-    
-    
-  </entry>
-  
-  <entry>
-    <title>KLEE中Seed模式流程解析</title>
+    <title>KLEE中Seed模式流程解析及相关选项介绍</title>
     <link href="https://vancir.github.io/klee-seed-mode.html"/>
     <id>https://vancir.github.io/klee-seed-mode.html</id>
     <published>2018-09-09T15:23:05.000Z</published>
-    <updated>2020-10-25T05:45:01.509Z</updated>
+    <updated>2020-10-25T09:58:18.792Z</updated>
     
     <summary type="html">
     
@@ -122,7 +98,7 @@
       
         
         
-          &lt;h2 id=&quot;main-cpp&quot;&gt;&lt;a href=&quot;#main-cpp&quot; class=&quot;headerlink&quot; title=&quot;main.cpp&quot;&gt;&lt;/a&gt;main.cpp&lt;/h2&gt;&lt;pre class=&quot; language-c++&quot;&gt;&lt;code
+          &lt;h2 id=&quot;main-cpp&quot;&gt;&lt;a href=&quot;#main-cpp&quot; class=&quot;headerlink&quot; title=&quot;main.cpp&quot;&gt;&lt;/a&gt;main.cpp&lt;/h2&gt;&lt;pre class=&quot; language-c&quot;&gt;&lt;code
         
       
     
@@ -137,7 +113,7 @@
     <link href="https://vancir.github.io/brief-intro-to-vuldeepecker.html"/>
     <id>https://vancir.github.io/brief-intro-to-vuldeepecker.html</id>
     <published>2018-07-24T15:24:28.000Z</published>
-    <updated>2020-10-25T05:45:01.509Z</updated>
+    <updated>2020-10-25T09:58:18.792Z</updated>
     
     <summary type="html">
     
@@ -160,7 +136,7 @@
     <link href="https://vancir.github.io/how-to-detect-android-emulator.html"/>
     <id>https://vancir.github.io/how-to-detect-android-emulator.html</id>
     <published>2018-04-04T15:31:24.000Z</published>
-    <updated>2020-10-25T05:45:01.509Z</updated>
+    <updated>2020-10-25T09:58:18.792Z</updated>
     
     <summary type="html">
     

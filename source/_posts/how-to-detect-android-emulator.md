@@ -561,7 +561,7 @@ private static boolean hasEth0Interface() {
 
 比如在论文**Rage Against the Virtual Machine: Hindering Dynamic Analysis of Android Malware**中, 作者对Android模拟器的加速器进行测试, 作者发现Android模拟器上的传感器会在相同的时间间隔内(观测结果是0.8s, 标准偏差为0.003043)产生相同的值. 显然对于现实世界的传感器, 这是不可能的. 
 
-![acc-cdf.png](https://bbs.pediy.com/upload/attach/201902/93_57YJWEHU6F5JQ2W.png)
+![acc-cdf.png](https://i.loli.net/2020/10/25/lJsdfwkPRoXrWTZ.jpg)
 
 于是我们可以先注册一个传感器监听器, 如果注册失败, 就可能是在模拟器中(排除实际设备不支持传感器的可能性). 如果注册成功, 那么检查**onSensorChanged**回调方法, 如果在连续调用这个方法的过程所观察到的传感器值或时间间隔相同, 那么就可以认定是在模拟器环境中.
 
@@ -571,7 +571,7 @@ private static boolean hasEth0Interface() {
 
 出于性能优化的原因, QEMU在每次执行指令时都不会主动更新程序计数器(PC), 由于翻译指令在本地执行, 而增加PC需要额外的指令带来开销. 所以QEMU只在执行那些从线性执行过程里中断的指令(例如分支指令)时才会更新程序计数器. 这也就导致在执行一些基本块的期间如果发生了调度事件, 那么也没有办法恢复调度前的PC, 也是出于这个原因, QEMU仅在执行基本块后才发生调度事件, 绝不会执行的过程中发生. 
 
-![sche-point.png](https://bbs.pediy.com/upload/attach/201902/93_Q4YVRMHW9ZH8VNT.png)
+![sche-point.png](https://i.loli.net/2020/10/25/ebIoUAySdj6OtWa.jpg)
 
 如上图, 因为调度可能在任意时间发生, 所以在非模拟器环境下, 会观察到大量的调度点. 而在模拟器环境中, 只能看到特定的调度点. 
 
@@ -579,7 +579,7 @@ private static boolean hasEth0Interface() {
 
 因为QEMU会跟踪代码页的改动, 于是存在一种新颖的方法来检测QEMU--使用自修改代码(Self-Modifying Code, SMC)引起模拟器和实际设备之间的执行流变化. 
 
-![memory.png](https://bbs.pediy.com/upload/attach/201902/93_FH46EXV5WKFAG3Z.png)
+![memory.png](https://i.loli.net/2020/10/25/zaUkIypswWN3hTM.jpg)
 
 ARM处理器包含有两个不同的缓冲Cache, 一个用于指令访问(I-Cache), 而另一个用于数据访问(D-Cache). 但如ARM这样的哈佛架构并不能保证I-Cache和D-Cache之间的一致性. 因此CPU有可能在新代码片已经写入主存后执行旧的代码片(也许是无效的). 
 
@@ -590,7 +590,7 @@ ARM处理器包含有两个不同的缓冲Cache, 一个用于指令访问(I-Cach
 
 在原生Android代码中, 可以使用**cacheflush**函数, 该函数通过系统调用完成上述操作. 
 
-![diff.png](https://bbs.pediy.com/upload/attach/201902/93_R9VYHDAE6SYEAEU.png)
+![diff.png](https://i.loli.net/2020/10/25/Y6dam7XNjwnx4gO.jpg)
 
 识别代码, 使用一个具有读写权限的内存, 其中包含两个不同函数f1和f2的代码, 这两个函数其实很简单, 只是单纯在一个全局字符串变量的末尾附加各自的函数名称, 这两个函数会在循环里交错执行, 这样就可以通过结果的字符串推断出函数调用序列. 
 
@@ -604,7 +604,7 @@ ARM处理器包含有两个不同的缓冲Cache, 一个用于指令访问(I-Cach
 
 看到这里会不会已经觉得检测方法够多了. 可是我还只是看了13年14年的资料. 有关近几年的资料还未涉及. 
 
-最后我就把这些检测方法整合在一张[思维导图](https://bbs.pediy.com/upload/attach/201804/722644_2SENQ6BYYPSXAH8.png)里供大家一览, 欢迎大家和我交流带带我
+最后我就把这些检测方法整合在一张[思维导图](https://i.loli.net/2020/10/25/x1gzSDWEBAbQ9mG.jpg)里供大家一览, 欢迎大家和我交流带带我
 
 ## 参考链接
 
@@ -615,4 +615,4 @@ ARM处理器包含有两个不同的缓冲Cache, 一个用于指令访问(I-Cach
 - [How can I detect when an Android application is running in the emulator?](https://stackoverflow.com/questions/2799097/how-can-i-detect-when-an-android-application-is-running-in-the-emulator): 网友给出了很多解决方法. 但实际上并不全面, 也只是模拟器检测中的冰山一角罢了. 毕竟可以检测的地方多了去了.
 - [利用任务调度特性检测Android模拟器](http://cb.drops.wiki/drops/mobile-13486.html)
 
-![思维导图.png](https://bbs.pediy.com/upload/attach/201804/722644_2SENQ6BYYPSXAH8.png)
+![思维导图.png](https://i.loli.net/2020/10/25/x1gzSDWEBAbQ9mG.jpg)

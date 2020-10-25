@@ -38,7 +38,7 @@ $(document).ready(function () {
     if (window.innerWidth <= 768) {
         $('#side-bar').removeClass('invisible');
         $('#side-bar').addClass('fadeInTop');
-    }else{
+    } else {
         $('#side-bar').removeClass('invisible');
         $('#side-bar').addClass('fadeInRight');
     }

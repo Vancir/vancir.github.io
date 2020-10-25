@@ -1,11 +1,11 @@
 ---
-title: KLEE中Seed模式流程解析
+title: KLEE中Seed模式流程解析及相关选项介绍
 date: 2018-09-09 15:23:05
 ---
 
 ## main.cpp
 
-``` c++
+``` c
   cl::list<std::string>
   SeedOutFile("seed-out");
 
@@ -15,7 +15,7 @@ date: 2018-09-09 15:23:05
 
 在main.cpp中首先会对ReplayKTestDir和ReplayKTestFile做判断. 如果用户有指定, 那么会继续判断SeedOutDir和SeedOutFile是否为空. 
 
-``` c++
+``` c
  if (!ReplayKTestDir.empty() || !ReplayKTestFile.empty()) {
     assert(SeedOutFile.empty());
     assert(SeedOutDir.empty());
@@ -32,7 +32,7 @@ date: 2018-09-09 15:23:05
 
 最终读取到的seed都保存在**std::vector<KTest *> seeds**中. 然后判断是否有读取到seed
 
-``` c++
+``` c
     if (!seeds.empty()) {
       klee_message("KLEE: using %lu seeds\n", seeds.size());
       // 使用 seed
@@ -42,7 +42,7 @@ date: 2018-09-09 15:23:05
 
 既然读取到了seed, 那就**interpreter->useSeeds(&seeds);**来使用seed. 这之后除了切换目录以及清理seeds的操作, 我们需要重点关注的是**interpreter->runFunctionAsMain(mainFn, pArgc, pArgv, pEnvp);**. 在interpreter设置好seed后, seed的使用过程会在**runFunctionAsMain**开始.
 
-``` c++
+``` c
     if (RunInDir != "") {... // 切换目录
     }
     // 运行main函数
@@ -58,14 +58,14 @@ date: 2018-09-09 15:23:05
 
 既然谈到**interpreter->useSeeds(&seeds);**那就来看看这个**interpreter**
 
-``` c++
+``` c
   Interpreter *interpreter =
     theInterpreter = Interpreter::create(ctx, IOpts, handler);
 ```
 
 这里实例化了一个interpreter. 而该方法的声明是在**interpreter.h**里, 实现却是在**Executor.cpp**
 
-``` c++
+``` c
 Interpreter *Interpreter::create(LLVMContext &ctx, const InterpreterOptions &opts,
                                  InterpreterHandler *ih) {
   return new Executor(ctx, opts, ih);
@@ -74,7 +74,7 @@ Interpreter *Interpreter::create(LLVMContext &ctx, const InterpreterOptions &opt
 
 也就是说实际上就是创建了一个Executor实例. 而**Executor**继承自**interpreter类**, 像**useSeeds**和**runFunctionAsMain**都在**Executor类**里进行了定义. 所以**interpreter->useSeeds(&seeds)**实际上就是**Executor::useSeeds**, **interpreter::runFunctionAsMain**就是**Executor::runFunctionAsMain**. 那么接下来就只看**Executor**
 
-``` c++
+``` c
 // Executor.h
 const std::vector<struct KTest *> *usingSeeds;  
 void useSeeds(const std::vector<struct KTest *> *seeds) override {
@@ -88,7 +88,7 @@ void useSeeds(const std::vector<struct KTest *> *seeds) override {
 
 回顾一下runFunctionAsMain的使用: **interpreter->runFunctionAsMain(mainFn, pArgc, pArgv, pEnvp);**
 
-``` c++
+``` c
 void Executor::runFunctionAsMain(Function *f,
 				 int argc,
 				 char **argv,
@@ -166,7 +166,7 @@ void Executor::runFunctionAsMain(Function *f,
 
 联系上部分的**interpreter->useSeeds**, 在设置好**usingSeeds**, 而**usingSeeds**仅在**Executor::run**中使用. 那么我们就直接来分析**run()**来看seed对klee执行流程的影响
 
-``` c++
+``` c
 void Executor::run(ExecutionState &initialState) {
   // 对模块中每个函数的每条指令的常数进行处理
   // 将处理后的结果存储在某个数据结构中
@@ -230,7 +230,7 @@ void Executor::run(ExecutionState &initialState) {
 
 ## usingSeeds
 
-``` c++
+``` c
 if (usingSeeds) {
     // 获得一个 seedMap[&initialState] 的引用
     std::vector<SeedInfo> &v = seedMap[&initialState];
@@ -299,7 +299,7 @@ if (usingSeeds) {
 
 因为在执行指令的时候并没有显式地将seedMap作参在执行时使用, 而seedMap是全局变量, 可以随时被调用, 而只需要比对state也能找到处理state时应该对应的seed. 因此我们就来看下整个klee工程里哪里有用到**seedMap**
 
-``` c++
+``` c
 branch:
 lib/Core/Executor.cpp:    seedMap.find(&state);
 lib/Core/Executor.cpp:  if (it != seedMap.end()) {
@@ -353,14 +353,14 @@ lib/Core/Executor.cpp:    if (it!=seedMap.end()) { // In seed mode we need to ad
 
 首先明确**Executor::branch**仅在**executeGetValue**和**executeInstruction**的**IndirectBr**和**switch**分支用到. 
 
-``` c++
+``` c
     std::vector<ExecutionState*> branches;
     branch(state, conditions, branches);
 ```
 
 作用则是在遇到分支的时候, 判断条件是否满足, 并将对应的条件复制到各自的branches里. 而在**branch**里
 
-``` c++
+``` c
   if (MaxForks!=~0u && stats::forks >= MaxForks) {
     unsigned next = theRNG.getInt32() % N;
     for (unsigned i=0; i<N; ++i) {
@@ -392,7 +392,7 @@ lib/Core/Executor.cpp:    if (it!=seedMap.end()) { // In seed mode we need to ad
 
 首先会判断是否超出了状态fork的最大数量**MaxForks**, 如果没有超过, 那么就会示例化一个**ExecutionState**对象**es**, 并使用**es->branch()**来分出对应的分支. 这里的**branch()**的原型是**ExecutionState::branch()**, 就不要混淆了. 
 
-``` c++
+``` c
 ExecutionState *ExecutionState::branch() {
   depth++;
 
@@ -413,7 +413,7 @@ ExecutionState *ExecutionState::branch() {
 
 然后我们再来看**Executor::branch**中跟seed相关的代码
 
-``` c++
+``` c
   // 如有必要, 重新分配种子以满足条件 
   // 必要时根据OnlyReplaySeeds来终止状态 (低效但简单)
   
@@ -466,7 +466,7 @@ ExecutionState *ExecutionState::branch() {
 
 ## fork
 
-``` c++
+``` c
   std::map< ExecutionState*, std::vector<SeedInfo> >::iterator it = 
     seedMap.find(¤t);
   bool isSeeding = it != seedMap.end();
@@ -475,7 +475,7 @@ ExecutionState *ExecutionState::branch() {
 
 首先这里取了一个迭代器**it**以及布尔值**isSeeding**判断当前是否还在seed模式下. 那么我们重点关注迭代器**it**的相关操作
 
-``` c++
+``` c
 if (isSeeding && 
       (current.forkDisabled || OnlyReplaySeeds) && 
       res == Solver::Unknown) {
@@ -510,7 +510,7 @@ if (isSeeding &&
 
 ## addConstraint
 
-``` c++
+``` c
 void Executor::addConstraint(ExecutionState &state, ref<Expr> condition) {
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(condition)) {
     if (!CE->isTrue())
@@ -552,7 +552,7 @@ void Executor::addConstraint(ExecutionState &state, ref<Expr> condition) {
 
 **executeGetValue**仅在**SpecialFunctionHandler::handleGetValue**中用到
 
-``` c++
+``` c
   add("klee_get_valuef", handleGetValue, true),
   add("klee_get_valued", handleGetValue, true),
   add("klee_get_valuel", handleGetValue, true),
@@ -572,7 +572,7 @@ void SpecialFunctionHandler::handleGetValue(ExecutionState &state,
 
 arguments[0]则是**klee_get_value**的第一个参数. 也就是通过**executeGetValue**来获取对应的符号的值
 
-``` c++
+``` c
 void Executor::executeGetValue(ExecutionState &state,
                                ref<Expr> e,
                                KInstruction *target) {
@@ -623,7 +623,7 @@ void Executor::executeGetValue(ExecutionState &state,
 
 在**updateStates**里进行的操作是将seedMap里的state给擦除掉. 
 
-``` c++
+``` c
 void Executor::updateStates(ExecutionState *current) {
   if (searcher) {
     searcher->update(current, addedStates, removedStates);
@@ -665,13 +665,13 @@ void Executor::updateStates(ExecutionState *current) {
 
 **executeMakeSymbolic**只由**handleMakeSymbolic**一处调用, 而**handleMakeSymbolic**只在处理**klee_make_symbolic**时会起作用. 
 
-``` c++
+``` c
 add("klee_make_symbolic", handleMakeSymbolic, false),
 ```
 
 因此可以确定的是**executeMakeSymbolic**也只有在处理**klee_make_symbolic**时会触发. 
 
-``` c++
+``` c
 void Executor::executeMakeSymbolic(ExecutionState &state, 
                                    const MemoryObject *mo,
                                    const std::string &name) {
@@ -743,7 +743,7 @@ void Executor::executeMakeSymbolic(ExecutionState &state,
 
 在**executeMakeSymbolic**中, 首先会根据**seedMap**提取出所有的**obj**, 并与**mo**进行比较, 如果跟**mo**的大小不匹配, 就会出现一些错误信息. 在真正处理seed时则会将其绑定给**si.assignment.bindings[array]**. 如果没有seed模式. 也就只能执行前半部分
 
-``` c++
+``` c
 	unsigned id = 0;
     std::string uniqueName = name;
     while (!state.arrayNames.insert(uniqueName).second) {
@@ -752,4 +752,176 @@ void Executor::executeMakeSymbolic(ExecutionState &state,
     const Array *array = arrayCache.CreateArray(uniqueName, mo->size);
     bindObjectInState(state, mo, false, array);
     state.addSymbolic(mo, array);
+```
+
+## Seed模式相关选项
+
+测试使用的命令为:
+
+``` bash
+klee -seed-out=./klee-out-0/test000002.ktest -only-seed -only-replay-seeds get_sign.bc
+```
+
+测试结果:
+
+``` bash
+varas@varas-virtual-machine:~/Downloads/klee/examples/get_sign$ klee -seed-out=./klee-out-0/test000002.ktest -only-seed -only-replay-seeds get_sign.bc 
+KLEE: output directory is "/home/varas/Downloads/klee/examples/get_sign/klee-out-6"
+KLEE: Using STP solver backend
+KLEE: KLEE: using 1 seeds
+
+KLEE: seeding done (0 states remain)
+
+KLEE: done: total instructions = 21
+KLEE: done: completed paths = 1
+KLEE: done: generated tests = 1
+varas@varas-virtual-machine:~/Downloads/klee/examples/get_sign$ cd klee-out-6/
+varas@varas-virtual-machine:~/Downloads/klee/examples/get_sign/klee-out-6$ ls
+assembly.ll  info  messages.txt  run.istats  run.stats  test000001.ktest  warnings.txt
+varas@varas-virtual-machine:~/Downloads/klee/examples/get_sign/klee-out-6$ ktest-tool test000001.ktest 
+ktest file : 'test000001.ktest'
+args       : ['get_sign.bc']
+num objects: 1
+object    0: name: 'a'
+object    0: size: 4
+object    0: data: '\x01\x01\x01\x01'
+varas@varas-virtual-machine:~/Downloads/klee/examples/get_sign/klee-out-6$ 
+```
+
+### -seed-out
+
+**-seed-out=**指定的seed文件会保存到**SeedOutFile**中, 在main函数中进行使用. 
+
+``` c
+  if (!ReplayKTestDir.empty() || !ReplayKTestFile.empty()) { ...
+  } else {
+    // 指定了 SeedOutFile 读取 seed 内容
+    std::vector<KTest *> seeds;
+    for (std::vector<std::string>::iterator
+           it = SeedOutFile.begin(), ie = SeedOutFile.end();
+         it != ie; ++it) {
+      KTest *out = kTest_fromFile(it->c_str());
+      if (!out) {
+        klee_error("unable to open: %s\n", (*it).c_str());
+      }
+      // SeedOutFile 方式获取 seed
+      seeds.push_back(out);
+    }
+    for (std::vector<std::string>::iterator ...
+    }
+
+    if (!seeds.empty()) {
+      klee_message("KLEE: using %lu seeds\n", seeds.size());
+      // 使用 seed
+      interpreter->useSeeds(&seeds);
+    }
+    if (RunInDir != "") { ...
+    }
+    // 运行main函数
+    interpreter->runFunctionAsMain(mainFn, pArgc, pArgv, pEnvp);
+
+    while (!seeds.empty()) {
+      kTest_free(seeds.back());
+      seeds.pop_back();
+    }
+  }
+```
+
+### -only-seed
+
+**-only-seed**与布尔值**OnlySeed**绑定, 默认关闭. 
+
+描述是**在seed模式结束后, 不做常规搜索直接停止执行**
+
+``` c
+  cl::opt<bool>
+  OnlySeed("only-seed",
+	   cl::init(false),
+           cl::desc("Stop execution after seeding is done without doing regular search (default=off)."));
+```
+
+仅在**Executor:run()**里使用到
+
+``` c
+    if (OnlySeed) {
+      doDumpStates();
+      return;
+    }
+```
+
+再来看**doDumpStates()**
+
+``` c
+void Executor::doDumpStates() {
+  if (!DumpStatesOnHalt || states.empty())
+    return;
+
+  klee_message("halting execution, dumping remaining states");
+  for (const auto &state : states)
+    terminateStateEarly(*state, "Execution halting.");
+  updateStates(nullptr);
+}
+```
+
+**DumpStatesOnHalt**是默认开启的选项, 在退出时将所有活动的状态都dump成测试用例文件.
+
+之后的操作是相当于提前终止, 因为**onlySeed**紧接着**seeding done**执行, 因此可以确保在seed模式执行结束后终止其他state
+
+### -only-replay-seeds
+
+**-only-replay-seed**与布尔值**OnlyReplaySeeds**绑定, 默认关闭. 
+
+描述是**执行时忽略不含有seed的状态**
+
+``` c
+  cl::opt<bool>
+  OnlyReplaySeeds("only-replay-seeds",
+		  cl::init(false),
+                  cl::desc("Discard states that do not have a seed (default=off)."));
+```
+
+仅在**Executor::branch**和**Executor::fork**有用到
+
+``` c
+if (OnlyReplaySeeds) {
+  for (unsigned i=0; i<N; ++i) {
+    if (result[i] && !seedMap.count(result[i])) {
+      terminateState(*result[i]);
+      result[i] = NULL;
+    }
+  } 
+}
+```
+手动指定**OnlyReplaySeeds**可以终止状态
+
+```c
+// Fix branch in only-replay-seed mode, if we don't have both true
+// and false seeds.
+if (isSeeding && 
+      (current.forkDisabled || OnlyReplaySeeds) && 
+      res == Solver::Unknown) {
+    bool trueSeed=false, falseSeed=false;
+    // Is seed extension still ok here?
+    for (std::vector<SeedInfo>::iterator siit = it->second.begin(), 
+           siie = it->second.end(); siit != siie; ++siit) {
+      ref<ConstantExpr> res;
+      bool success = 
+        solver->getValue(current, siit->assignment.evaluate(condition), res);
+      assert(success && "FIXME: Unhandled solver failure");
+      (void) success;
+      if (res->isTrue()) {
+        trueSeed = true;
+      } else {
+        falseSeed = true;
+      }
+      if (trueSeed && falseSeed)
+        break;
+    }
+    if (!(trueSeed && falseSeed)) {
+      assert(trueSeed || falseSeed);
+      
+      res = trueSeed ? Solver::True : Solver::False;
+      addConstraint(current, trueSeed ? condition : Expr::createIsZero(condition));
+    }
+  }
 ```

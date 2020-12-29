@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://vancir.github.io/"/>
-  <updated>2020-10-28T16:05:53.089Z</updated>
+  <updated>2020-12-29T15:31:18.908Z</updated>
   <id>https://vancir.github.io/</id>
   
   <author>
@@ -17,11 +17,34 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>20年的光怪陆离我还要想想21年要如何过</title>
+    <link href="https://vancir.github.io/2020-annual-summary-and-future-plan.html"/>
+    <id>https://vancir.github.io/2020-annual-summary-and-future-plan.html</id>
+    <published>2020-12-29T22:14:45.000Z</published>
+    <updated>2020-12-29T15:31:18.908Z</updated>
+    
+    <summary type="html">
+    
+      
+      
+        
+        
+          &lt;p&gt;写下这篇博客, 我思考最久的问题, 始终都是我自身. 我不断地审视自己, 我会接受自己的答案吗? 我会害怕自己的答案吗? 我觉得无论何时, 只有此时此刻自己面对自己时, 所有的回答就像是回声一样, 在封闭的山谷里不断激荡着同一个声音, 我相信的永远是自己愿意相信的.
+        
+      
+    
+    </summary>
+    
+    
+    
+  </entry>
+  
+  <entry>
     <title>论文: Angora加点优化策略的高效fuzzer</title>
     <link href="https://vancir.github.io/angora-efficient-fuzzer.html"/>
     <id>https://vancir.github.io/angora-efficient-fuzzer.html</id>
     <published>2020-10-28T23:05:50.000Z</published>
-    <updated>2020-10-28T16:05:53.089Z</updated>
+    <updated>2020-12-29T15:31:18.908Z</updated>
     
     <summary type="html">
     
@@ -44,7 +67,7 @@
     <link href="https://vancir.github.io/savior-bug-driven-hybrid-fuzzing.html"/>
     <id>https://vancir.github.io/savior-bug-driven-hybrid-fuzzing.html</id>
     <published>2020-10-27T00:33:45.000Z</published>
-    <updated>2020-10-28T16:05:53.089Z</updated>
+    <updated>2020-12-29T15:31:18.912Z</updated>
     
     <summary type="html">
     
@@ -67,7 +90,7 @@
     <link href="https://vancir.github.io/qsym-concolic-execution-for-hybrid-fuzzing.html"/>
     <id>https://vancir.github.io/qsym-concolic-execution-for-hybrid-fuzzing.html</id>
     <published>2020-10-26T01:04:06.000Z</published>
-    <updated>2020-10-28T16:05:53.089Z</updated>
+    <updated>2020-12-29T15:31:18.908Z</updated>
     
     <summary type="html">
     
@@ -90,7 +113,7 @@
     <link href="https://vancir.github.io/what-does-afl-docs-say.html"/>
     <id>https://vancir.github.io/what-does-afl-docs-say.html</id>
     <published>2020-04-01T15:11:17.000Z</published>
-    <updated>2020-10-28T16:05:53.089Z</updated>
+    <updated>2020-12-29T15:31:18.912Z</updated>
     
     <summary type="html">
     
@@ -113,7 +136,7 @@
     <link href="https://vancir.github.io/understanding-linux-malware.html"/>
     <id>https://vancir.github.io/understanding-linux-malware.html</id>
     <published>2020-03-23T15:38:33.000Z</published>
-    <updated>2020-10-28T16:05:53.089Z</updated>
+    <updated>2020-12-29T15:31:18.912Z</updated>
     
     <summary type="html">
     
@@ -136,7 +159,7 @@
     <link href="https://vancir.github.io/zesti-reading-note.html"/>
     <id>https://vancir.github.io/zesti-reading-note.html</id>
     <published>2018-09-09T15:23:42.000Z</published>
-    <updated>2020-10-28T16:05:53.089Z</updated>
+    <updated>2020-12-29T15:31:18.912Z</updated>
     
     <summary type="html">
     
@@ -159,7 +182,7 @@
     <link href="https://vancir.github.io/klee-seed-mode.html"/>
     <id>https://vancir.github.io/klee-seed-mode.html</id>
     <published>2018-09-09T15:23:05.000Z</published>
-    <updated>2020-10-28T16:05:53.089Z</updated>
+    <updated>2020-12-29T15:31:18.908Z</updated>
     
     <summary type="html">
     
@@ -182,7 +205,7 @@
     <link href="https://vancir.github.io/brief-intro-to-vuldeepecker.html"/>
     <id>https://vancir.github.io/brief-intro-to-vuldeepecker.html</id>
     <published>2018-07-24T15:24:28.000Z</published>
-    <updated>2020-10-28T16:05:53.089Z</updated>
+    <updated>2020-12-29T15:31:18.908Z</updated>
     
     <summary type="html">
     
@@ -205,7 +228,7 @@
     <link href="https://vancir.github.io/how-to-detect-android-emulator.html"/>
     <id>https://vancir.github.io/how-to-detect-android-emulator.html</id>
     <published>2018-04-04T15:31:24.000Z</published>
-    <updated>2020-10-28T16:05:53.089Z</updated>
+    <updated>2020-12-29T15:31:18.908Z</updated>
     
     <summary type="html">
     

@@ -61,3 +61,50 @@ v, found := c.Get("mykey")
 * 数据本地缓存: `boltdb/bolt`被归档了, 所以我正在考虑其替代品`Badger`
 
 * 数据版本控制: `minikube start && pachctl deploy local` 在本地部署一个单机节点
+
+## 向量和矩阵操作
+
+使用 `gonum/floats`进行向量操作: 
+
+* 定义向量: `vector := []float64{11.0, 5.2, -1.3}`
+* 点积: `dotProduct := floats.Dot(vectorA, vectorB)`
+* 标准化: `floats.Scale(1.5, vectorA)`
+* 范数: `normA := floats.Norm(vectorA, 2)`
+
+使用`gonum/mat`进行操作
+
+* 定义向量: `	vectorA := mat.NewVecDense(3, []float64{11.0, 5.2, -1.3})`
+* 点积: `dotProduct := mat.Dot(vectorA, vectorB)`
+* 标准化: `vectorA.ScaleVec(1.5, vectorA)`
+* 范数: `normB := blas64.Nrm2(vectorB.RawVector())`
+
+给定切片创建矩阵: 
+
+``` go
+components := []float64{1.2, -5.7, -2.4, 7.3}
+a := mat.NewDense(2, 2, components)
+fa := mat.Formatted(a, mat.FormatPython())
+```
+
+访问和设置矩阵数值
+
+``` go
+val := a.At(0, 1)
+col := mat.Col(nil, 0, a)
+row := mat.Row(nil, 1, a)
+
+a.Set(0, 1, 11.2)
+a.SetRow(0, []float64{14.3, -4.2})
+a.SetCol(0, []float64{1.7, -0.3})
+```
+
+加减乘等: `d.Add(a, b)`, `d.Sub(a, b)`, `d.Mul(a, b)`, `d.Pow(a, 5)`, `d.Apply(sqrt, a)`
+
+行列式: `deta := mat.Det(a)`, 转置: `a.T()`, 逆矩阵: `aInverse.Inverse(a)`
+
+## 测量数据分布情况
+
+使用`gonum/stat` 和`montanaflynn/stats`进行基本的数据测量: 均值: `stat.Mean`, 众数: `stat.Mode`,  中位数: `stats.Median`
+
+
+

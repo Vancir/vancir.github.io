@@ -9,6 +9,48 @@ date: 2021-02-11 21:11:22
 
 [Neo4j](https://github.com/neo4j/neo4j)是业界主流的图数据库, 数据库目前排名是19(参见[DB-Engines Ranking](https://db-engines.com/en/ranking)), 以点/关系进行存储, 支持百亿级别的查询. Neo4j分为免费的社区版和付费的企业版. 社区版只能进行单机部署, 企业版可以部署集群且性能上有着诸多优化, 以及解锁了诸多限制. [ONgDB](https://github.com/graphfoundation/ongdb) 是Neo4j付费闭源前的分支版本, 目前的最新版本为3.6.2, 跟Neo4j企业版本3.6功能相差无几. 
 
+## ONgDB因果集群部署
+
+因果集群基于Raft协议开发, Raft是一种更加易于理解的一致性算法, 可支持大规模和多拓扑结构的数据环境. 因果集群主要有以下两大特点:
+
+1. 安全性：核心服务器(Core)为事物平台处理提供了容错平台
+
+2. 可扩展性：只读副本(Read Replica)为图查询提供了一个大规模高可扩展的平台
+
+集群部署会有一些坑点，也许是版本迭代升级出现的新问题，从网上搜集的现有资料并没有提及到这些问题和解决方法。
+
+首先我的使用的版本是`ongdb-enterprise-3.6.2`，这是我之前就下载好存本地的，但此时在ONgDB仓库里将之前发布的版本都删除了（我推测是因为跟Neo4j打官司的原因），只留下约一个月前发布的[1.0.0-alpha01](https://github.com/graphfoundation/ongdb/releases/tag/1.0.0-alpha01)版本，这也是ONgDB正式发布的第一个alpha测试版本，原先虽然名为ONgDB但其实代码里面都是以neo4j来命名，而这个`1.0.0`则将名称都改为了ongdb。并且ongdb和neo4j在配置上也并不完全一致，比如因果集群部分配置就是这样。我在使用1.0.0版本进行部署的时候主节点会卡在`Attempting to connect to the other cluster members`阶段，而ONgDB的文档内容非常少且网站也挂了，确认我配置没有问题后，我选择切回了旧的`ongdb-enterprise-3.6.2`版本。（并且此时ongdb-apoc还不兼容1.0.0版本）
+
+我测试使用的是三台服务器，需要先配置好SSH密钥，让这三台服务器能通过SSH直接登录到彼此服务器。
+
+随后参考Neo4j的集群配置文档，为配置文件`conf/neo4j.conf`改动以下内容（注意：尽量去找配置文件内已有的项进行修改，而不是直接在文件末尾新增，因为多个相同项Neo4j只取第一项作为结果）：
+
+```shell
+dbms.default_listen_address=0.0.0.0
+# 其他服务器用该地址来连接到节点，设定为节点的IP即可（无需端口）
+dbms.default_advertised_address=core03.example.com
+# 指定节点是核心节点还是冗余节点
+dbms.mode=CORE
+# 集群内所有节点的地址，集群节点启动后会不断通过该列表探测活跃的成员，默认端口5000
+causal_clustering.initial_discovery_members=core01.example.com:5000,core02.example.com:5000,core03.example.com:5000
+# （可选）该选项能避免集群在选举新的主节点前预先选举候选节点，这样就能避免因网络原因无法选举
+causal_clustering.enable_pre_voting=true
+```
+
+所有节点的配置上其实除了`dbms.default_advertised_address`需要设置为自己的IP地址外，其他的配置都是一致的（当然还有mode你可以自己选定是作为核心节点还是冗余节点）。
+
+配置完后逐个启动各个节点即可，如果没有成功启动，那么很有可能是数据不一致带来的问题，建议先将`data`清空或重命名其他名称，保证集群内各节点的`data`都是一致的，重新启动图数据库。
+
+**一些报错信息及解决办法**
+
+* `Waiting to hear from leader`： 清空`data`或者重命名成其他名称
+* `Unable to find transaction 1 in any of my logical logs`： 数据不一致造成的问题，可以尝试清空`data`或者`neo4j-admin unbind --database=graph.db`
+* 对于因果集群要想使用neo4j-import导入全量数据，也会存在数据不一致造成启动失败的问题，所以官方给出的实践方案是，在一个节点上成功导入数据后，使用scp或rsync等工具直接导入的数据库传输到集群内其他节点服务器上。当然如果依然有报错情况的话，还需要执行`neo4j-admin unbind --database=graph.db`来解除绑定。
+
+集群成功部署后，就可以通过`call dbms.cluster.overview()`和`call dbms.cluster.routing.getServers()`来查看集群成员角色和请求路由信息。默认第一个启动的节点为作为主节点，其他节点则作为从节点。主节点负责协调集群并接受所有的写入，数据改动会同步到所有从节点上，主节点挂掉则其他从节点就会开始进行选举，投票出新的节点来作为主节点进行服务，集群在可用性上有很大的强化。
+
+集群的连接方式基本也没有多少变化，原先单实例时的协议头为`bolt://`，而启用了路由的协议头则变更为`bolt+routing://`，协议头后面跟任意集群内节点的地址即可。当然集群内各节点也依然可以使用`bolt://`协议头单独用来查询数据（注意可读不一定可写）。另外要注意自己使用的驱动是否支持直接使用`bolt+routing://`协议头，像py2neo就不支持直接改协议头，但是可以在初始化Graph对象时增加`routing=True`选项启用路由模式。
+
 ## 关于性能优化的技巧
 
 * 图数据库配置`conf/neo4j.con`, 可以使用`bin/neo4j-admin memrec`来查看推荐的配置.
@@ -33,7 +75,14 @@ date: 2021-02-11 21:11:22
 
 * 如果有确定的目标, 编写cypher语句时先match该目标再匹配路径, 如 `match (n:Person{name: 'Peter'}) return (n)-[]->()`, 而不是匹配路径再过滤路径上节点属性, 如`match p=(n)-[]->() where n.name='Peter' return p `. 后者会扫描全图. 
 
-* 使用`neo4j-import`导入海量数据, 但该工具需要脱机并且只适用于空库, 数据可能还需要预处理生成CSV, 不过它的效率非常值得你这么做. 
+* 使用`neo4j-import`导入海量数据, 但该工具需要脱机并且只适用于空库, 数据可能还需要预处理生成CSV, 不过它的效率非常值得你这么做. 同时需要注意其导入时是可以用**正则表达式**来匹配多个文件名的（注意**不是通配符**），比如如下：
+
+  ```shell
+  bin/neo4j-admin import \
+  	--nodes="import/movies4-header.csv,import/movies4-part.*" \
+  	--nodes="import/actors4-header.csv,import/actors4-part.*" \
+  	--relationships="import/roles4-header.csv,import/roles4-part.*"
+  ```
 
 * 双向关系会极大地影响图数据库的遍历性能, 尽可能地不要这样做.如果真的发生了, 也可以参考[这篇文章](https://blog.csdn.net/superman_xxx/article/details/104791282?spm=1001.2014.3001.5502)进行删除. 
 
@@ -104,20 +153,14 @@ date: 2021-02-11 21:11:22
 以下资料并非不重要, 而是用于扩展自己的学习面. 
 
 * [Neo4j Documentation](https://neo4j.com/docs/): 这里列出了Neo4j的所有文档. 
-
 * [The Neo4j Python Driver Manual](https://neo4j.com/docs/python-manual/current/), Neo4j官方给出的Python driver手册. 
-
 * [The Py2neo Handbook](https://py2neo.readthedocs.io/en/latest/): Py2neo相比官方给出的Python driver, 简化和封装了跟Neo4j的连接操作. 
-
 * [APOC User Guide 4.1](https://neo4j.com/labs/apoc/4.1/): APOC是neo4j的插件之一, 能够扩充Neo4j的一些能力. 
-
 * [ONgDB - fork of Neo4j Enterprise: Graphs for Everyone](https://github.com/graphfoundation/ongdb): Neo4j的分支版本, 后续多节点部署会考虑使用这个. 
-
 * [Neo4j community](https://community.neo4j.com/): neo4j官方维护的论坛, 应该是最直接寻求答案的地方. 
-
 * [Neo4j 图数据库中文社区](http://neo4j.com.cn/): 国内的Neo4j中文社区. 
-
 * [Tnoy.ma的csdn博客](https://yc-ma.blog.csdn.net/): 里面有许多的文章介绍图数据库, [Yc-Ma Blog](https://crazyyanchao.github.io/blog/archive.html) 疑似是作者的另一博客. 
 * [俞博士的csdn博客](https://blog.csdn.net/GraphWay): 作者应该是在Neo4j就职, 介绍的东西还蛮实际的, 并且有不少PPT方便理解.
+* [图数据库neo4j因果集群技术分析](https://zhuanlan.zhihu.com/p/83964428): 非常详细地讲述了因果集群.
 
 实际过程中会有许多需要进行谷歌搜索的事情, 大部分参考于stackoverflow的回答. 

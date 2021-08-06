@@ -12,6 +12,7 @@
     "version": "4.2.1"
   },
   "dependencies": {
+    "han-css": "^3.3.0",
     "hexo": "^4.2.0",
     "hexo-browsersync": "^0.3.0",
     "hexo-generator-archive": "^1.0.0",

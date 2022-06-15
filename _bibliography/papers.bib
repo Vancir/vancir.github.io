@@ -1,72 +1,29 @@
 ---
 ---
 
-@string{aps = {American Physical Society,}}
-
-@book{einstein1956investigations,
-  bibtex_show={true},
-  title={Investigations on the Theory of the Brownian Movement},
-  author={Einstein, Albert},
-  year={1956},
-  publisher={Courier Corporation,}
+@inproceedings{liang:sqlright,
+  abbr         = {sqlright},
+  title        = {Detecting Logical Bugs of DBMS with Coverage-based Guidance (To Appear)},
+  author       = {Yu Liang and Song Liu and Hong Hu},
+  abstract     = {Database management system (DBMS) is a critical component of modern data-intensive applications. Developers adopt many testing techniques to detect and fix DBMS bugs such as crashes and assertion failures. However, most of the previous efforts cannot detect logical bugs that render the DBMS returns incorrect results. Recent work proposed several oracles to identify incorrect results, but they rely on rule-based expression generation to synthesize queries without any guidance. <br><br> In this paper, we propose to combine coverage-based guidance, validity-oriented mutations and oracles to detect logical bugs for DBMS systems. To achieve our goal, we first design a set of general APIs to decouple the logic of fuzzers and oracles, so that developers can easily port fuzzing tools to test DBMSs and write new oracles for existing fuzzers. We further provide validity-oriented mutations to generate high-quality query statements so as to find more logical bugs. Our prototype, SQLRight, outperforms existing tools that only rely on oracles or code coverage. It in total detects 18 logical bugs from three well-tested DBMSs, SQLite, PostgreSQL and MySQL. At the time of paper writing, all bugs have been confirmed and 13 of them are fixed.},
+  year         = {2022},
+  month        = {Aug},
+  address      = {Boston, MA},
+  pdf          = {liang_sqlright.pdf},
+  selected     = {true},
+  booktitle    = {Proceedings of the 31st USENIX Security Symposium (USENIX)},
 }
 
-@article{einstein1950meaning,
-  abbr={AJP},
-  bibtex_show={true},
-  title={The meaning of relativity},
-  author={Einstein, Albert and Taub, AH},
-  journal={American Journal of Physics,},
-  volume={18},
-  number={6},
-  pages={403--404},
-  year={1950},
-  publisher={American Association of Physics Teachers,}
-}
 
-@article{PhysRev.47.777,
-  abbr={PhysRev},
-  title={Can Quantum-Mechanical Description of Physical Reality Be Considered Complete?},
-  author={Einstein, A. and Podolsky, B. and Rosen, N.},
-  abstract={In a complete theory there is an element corresponding to each element of reality. A sufficient condition for the reality of a physical quantity is the possibility of predicting it with certainty, without disturbing the system. In quantum mechanics in the case of two physical quantities described by non-commuting operators, the knowledge of one precludes the knowledge of the other. Then either (1) the description of reality given by the wave function in quantum mechanics is not complete or (2) these two quantities cannot have simultaneous reality. Consideration of the problem of making predictions concerning a system on the basis of measurements made on another system that had previously interacted with it leads to the result that if (1) is false then (2) is also false. One is thus led to conclude that the description of reality as given by a wave function is not complete.},
-  journal={Phys. Rev.,},
-  volume={47},
-  issue={10},
-  pages={777--780},
-  numpages={0},
-  year={1935},
-  month={May},
-  publisher=aps,
-  doi={10.1103/PhysRev.47.777},
-  url={http://link.aps.org/doi/10.1103/PhysRev.47.777},
-  html={https://journals.aps.org/pr/abstract/10.1103/PhysRev.47.777},
-  pdf={example_pdf.pdf},
-  selected={true}
-}
-
-@article{einstein1905molekularkinetischen,
-  title={{\"U}ber die von der molekularkinetischen Theorie der W{\"a}rme geforderte Bewegung von in ruhenden Fl{\"u}ssigkeiten suspendierten Teilchen},
-  author={Einstein, A.},
-  journal={Annalen der physik,},
-  volume={322},
-  number={8},
-  pages={549--560},
-  year={1905},
-  publisher={Wiley Online Library}
-}
-
-@article{einstein1905movement,
-  abbr={Ann. Phys.},
-  title={Un the movement of small particles suspended in statiunary liquids required by the molecular-kinetic theory 0f heat},
-  author={Einstein, A.},
-  journal={Ann. Phys.,},
-  volume={17},
-  pages={549--560},
-  year={1905}
-}
-
-@article{einstein1905electrodynamics,
-  title={On the electrodynamics of moving bodies},
-  author={Einstein, A.},
-  year={1905}
+@inproceedings{hou:andscanner,
+  abbr         = {andscanner},
+  title        = {Large-scale Security Measurements on the Android Firmware Ecosystem},
+  author       = {Qinsheng Hou and Wenrui Diao and Yanhao Wang and Xiaofeng Liu and Song Liu and Lingyun Ying and Shanqing Guo and Yuanzhi Li and Meining Nie and Haixin Duan},
+  abstract     = {Android is the most popular smartphone platform with over 85% market share. Its success is built on openness, and phone vendors can utilize the Android source code to make products with unique software/hardware features. On the other hand, the fragmentation and customization of Android also bring many security risks that have attracted the attention of researchers. Many efforts were put in to investigate the security of customized Android firmware. However, most of the previous work focuses on designing efficient analysis tools or analyzing particular aspects of the firmware. There still lacks a panoramic view of Android firmware ecosystem security and the corresponding understandings based on large-scale firmware datasets. In this work, we made a large-scale comprehensive measurement of the Android firmware ecosystem security. Our study is based on 6,261 firmware images from 153 vendors and 602 Android-related CVEs, which is the largest Android firmware dataset ever used for security measurements. In particular, our study followed a series of research questions, covering vulnerabilities, patches, security updates, and pre-installed apps. To automate the analysis process, we designed a framework, AndScanner, to complete ROM crawling, ROM parsing, patch analysis, and app analysis. Through massive data analysis and case explorations, several interesting findings are obtained. For example, the patch delay and missing issues are widespread in Android images, say 24.2% and 6.1% of all images, respectively. The latest images of several phones still contain vulnerable pre-installed apps, and even the corresponding vulnerabilities have been publicly disclosed. In addition to data measurements, we also explore the causes behind these security threats through case studies and demonstrate that the discovered security threats can be converted into exploitable vulnerabilities via 38 newfound vulnerabilities by our framework, 32 of which have been assigned CVE/CNVD numbers. This study provides much new knowledge of the Android firmware ecosystem with deep understanding of software engineering security practices},
+  year         = {2022},
+  month        = {May},
+  address      = {Pittsburgh, PA},
+  pdf          = {hou_andscanner.pdf},
+  selected     = {true},
+  booktitle    = {The 44th IEEE/ACM International Conference on Software Engineering (ICSE)},
 }

@@ -10,14 +10,9 @@ subtitle: >
 profile:
   align: right
   image: profile.jpg
-  address: >
-    <p>555 your office number</p>
-    <p>123 your address street</p>
-    <p>Your City, State 12345</p>
 
 news: true  # includes a list of news items
 selected_papers: true # includes a list of papers marked as "selected={true}"
-social: true  # includes social icons at the bottom of the page
 ---
 
  I am a first-year Ph.D. student at <a href='https://www.psu.edu'>Penn State University</a>, advised by <a href="https://huhong789.github.io">Prof. Hong Hu</a>. Before joining Penn State University, I obtained my Bachelor's degree from Xiamen University. My research interests include Software and System Security.

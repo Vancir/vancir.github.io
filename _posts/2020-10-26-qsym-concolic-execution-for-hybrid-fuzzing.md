@@ -39,7 +39,7 @@ IR优化器有自己的一些优化策略, 比如不涉及符号变量的基本�
 
 QSYM的设计架构如下图所示: 
 
-{% include figure.html path="posts/t6fYoxhIrCbGq9s.png" %}
+{% include figure.html path="https://i.loli.net/2020/10/26/t6fYoxhIrCbGq9s.png" %}
 
 ### 优化混合执行引擎
 

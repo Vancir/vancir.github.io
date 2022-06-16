@@ -8,7 +8,7 @@
     {% endfor -%}
 
     <!-- Fallback to the original file -->
-    <img class="img-fluid rounded {{% if include.class %}}{{ include.class }}{{% endif %}}" src="https://cdn.jsdelivr.net/gh/vancir/vancir.github.io/assets/img{{ include.path | relative_url }}" {% if include.alt %}alt="{{ include.alt }}"{% endif %} height="230" style="display:block;margin:0 auto;" {% if include.title %}title="{{ include.title }}"{% endif %} data-zoomable />
+    <img class="img-fluid rounded {{% if include.class %}}{{ include.class }}{{% endif %}}" src="{{ include.path | relative_url }}" {% if include.alt %}alt="{{ include.alt }}"{% endif %} height="230" style="display:block;margin:0 auto;" {% if include.title %}title="{{ include.title }}"{% endif %} data-zoomable />
 
   </picture>
 

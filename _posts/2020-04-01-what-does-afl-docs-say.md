@@ -74,7 +74,7 @@ AFL_NO_X86=1 gmake && gmake -C llvm_mode
 
 以下是一个AFL模糊测试过程中的状态看板: 
 
-{% include figure.html path="posts/n2lhwZR1HOrWYUN.png" %}
+{% include figure.html path="https://i.loli.net/2020/10/25/n2lhwZR1HOrWYUN.png" %}
 
 数据看板有很好地颜色来区分重要等级, 看板也有不同的小的板块组成, 那么接下来就来讲讲各个板块. 
 

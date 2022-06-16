@@ -2,10 +2,24 @@
 ---
 <!-- _layouts/bib.html -->
       <div class="row">
-        <div class="col-sm-4 abbr">
-        {%- if entry.abbr -%}
-          <img class="img-fluid rounded" src="{{ site.data.pubimg[entry.abbr] | prepend: '/assets/pubimg/' | relative_url }}">
-        {%- endif -%}
+        <div class="col-sm-2 abbr">
+
+          <!-- Show badge icon -->
+          {%- if entry.abbr -%}
+            {%- if site.data.pubimg[entry.abbr] -%}
+              <abbr class="badge"><a href="{{site.data.pubimg[entry.abbr].url}}">{{site.data.pubimg[entry.abbr].badge}}</a></abbr>
+            {%- else -%}
+              <abbr class="badge">{{site.data.pubimg[entry.abbr].badge}}</abbr>
+            {%- endif -%}
+          {%- endif -%}
+
+          <!-- Show preview image -->
+          <div class="teaser">
+            {%- if entry.abbr -%}
+              <img class="img-fluid rounded z-depth-1" src="{{ site.data.pubimg[entry.abbr].image | prepend: '/assets/pubimg/' | relative_url }}" data-zoomable>
+            {%- endif -%}
+          </div>
+
         </div>
 
         <!-- Entry bib key -->

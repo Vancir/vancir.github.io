@@ -1,2 +1,9 @@
-sqlright: sqlright.png
-andscanner: andscanner.png
+sqlright: 
+  image: sqlright.png
+  badge: USENIX ' 22
+  url: https://www.usenix.org/conference/usenixsecurity22
+
+andscanner: 
+  image: andscanner.png
+  badge: ICSE ' 22
+  url: https://conf.researchr.org/home/icse-2022

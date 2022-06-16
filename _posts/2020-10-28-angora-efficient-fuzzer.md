@@ -2,6 +2,7 @@
 layout: post
 title: "论文: Angora加点优化策略的高效fuzzer"
 date: 2020-10-28 23:05:50
+tags: ["paper", 'taint']
 ---
 
 ## 简介

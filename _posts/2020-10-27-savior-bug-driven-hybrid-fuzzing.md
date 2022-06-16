@@ -2,6 +2,7 @@
 layout: post
 title: "论文: SAVIOR以Bug导向的混合模糊测试框架"
 date: 2020-10-27 00:33:45
+tags: ["fuzzing", "bug", "paper"]
 ---
 
 ## 简介

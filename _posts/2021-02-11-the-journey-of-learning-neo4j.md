@@ -2,6 +2,7 @@
 layout: post
 title: 我在学习和实践图数据库 Neo4j 的漫漫成长路
 date: 2021-02-11 21:11:22
+tags: ['neo4j', "optimization"]
 ---
 
 ## 什么是图数据库和Neo4j?

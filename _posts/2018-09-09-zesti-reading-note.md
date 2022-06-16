@@ -2,6 +2,7 @@
 layout: post
 title: "论文: Zesti用于改进回归测试的符号执行方案"
 date: 2018-09-09 15:23:42
+tags: ["klee", "paper", "symexe"]
 ---
 
 ## A. 彻底对敏感操作进行测试

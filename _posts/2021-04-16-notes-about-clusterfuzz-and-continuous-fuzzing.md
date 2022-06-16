@@ -2,6 +2,7 @@
 layout: post
 title: 关于ClusterFuzz以及规模化持续Fuzzing的笔记
 date: 2021-04-16 22:43:14
+tags: ["clusterfuzz", "oss-fuzz"]
 ---
 
 

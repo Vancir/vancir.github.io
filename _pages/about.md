@@ -8,7 +8,7 @@ subtitle: >
   <h6 class="m-0 mb-2" style="font-size: 0.83em;"><a href="mailto:svl6237@psu.edu" class="page-description" target="_blank">E-Mail: svl6237 at psu dot edu</a></h6>
 
 profile:
-  align: right
+  align: left
   image: profile.jpg
 
 news: true  # includes a list of news items

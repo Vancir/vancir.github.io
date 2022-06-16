@@ -11,7 +11,7 @@ category: ['fuzzing']
 
 ## Architectural Overview
 
-{% include figure.html path="https://i.loli.net/2021/04/16/qfylSnuEOhxFBHP.png" %}
+{% include figure.html path="posts/qfylSnuEOhxFBHP.png" %}
 
 首先ClusterFuzz进行了前后端分离, 而所谓的AppEngine其实是Google云平台的一项服务, 相当于提供了一个平台让开发者去运行自己的代码而无需关心平台的维护. ClusterFuzz不可免地依赖了Google的不少云服务, 像图片里还有Google Compute Engine, Google Cloud Storage, Datastore, Blobstore就是如此. 
 

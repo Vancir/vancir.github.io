@@ -37,7 +37,7 @@ ZESTI动态识别敏感指令. 当它执行具体的程序路径时, 它会跟�
 
 为了全面地使用不同的输入执行敏感指令, ZESTI尝试遵循达到这些敏感指令的替代执行路径. 为此, ZESTI会识别沿着执行可能遇到分支的具体路径的所有点, 例如取决于符号输入的分支. 然后ZESTI会根据与敏感指令的距离以升序对分支点进行排序, 并将它们作为符号执行的起始点. 
 
-{% include figure.html path="https://i.loli.net/2018/09/09/5b94fc0bb0c49.png" %}
+{% include figure.html path="posts/5b94fc0bb0c49.png" %}
 
 上图概述了ZESTI所使用的策略. 
 

@@ -19,7 +19,7 @@ date: 2021-01-07 23:32:40
 * 开发者: 普通开发者可以进行代码包的开发, 同时也是发布包的直接使用者.
 * 终端用户: 终端用户是供应链的下游, 虽然没有直接跟包和平台进行接触, 但用户会使用到最终的产品. 
 
-{% include figure.html path="https://i.loli.net/2021/01/11/a17RFOnQsby9IZ4.png" class="img-fluid rounded z-depth-1" zoomable=true %}
+{% include figure.html path="https://i.loli.net/2021/01/11/a17RFOnQsby9IZ4.png" %}
 
 ## 平台方安全检查
 
@@ -29,7 +29,7 @@ date: 2021-01-07 23:32:40
 * 审核检查则在于平台方检出存在漏洞代码/恶意代码包的能力. 遗憾的是测试的三个平台没有一个具备该能力. 
 * 补救响应功能则在于平台方在出现安全事故后是否积极地根据报告移除代码包, 封禁攻击者账户, 通知受害者尽快移除本地的危险包以及提供修复建议. 
 
-{% include figure.html path="https://i.loli.net/2021/01/11/jtN3JHsyI1o8LTX.png" class="img-fluid rounded z-depth-1" zoomable=true %}
+{% include figure.html path="https://i.loli.net/2021/01/11/jtN3JHsyI1o8LTX.png" %}
 
 ## 攻击向量
 
@@ -41,7 +41,7 @@ date: 2021-01-07 23:32:40
 
 ## 分析方法 
 
-{% include figure.html path="https://i.loli.net/2021/01/11/I5liLzDCgwBoWqE.png" class="img-fluid rounded z-depth-1" zoomable=true %}
+{% include figure.html path="https://i.loli.net/2021/01/11/I5liLzDCgwBoWqE.png" %}
 
 * 元数据分析: 提取包的元数据信息(比如包名,作者,发布版本,下载次数,依赖等)标记出可能的恶意包. 
 * 静态分析: 
@@ -53,4 +53,4 @@ date: 2021-01-07 23:32:40
   * 动态跟踪: 使用sysdig来捕获代码运行时的系统调用trace. 
 * 启发式规则: 作者定义了一系列的启发式规则来帮助分析和检测.
 
-{% include figure.html path="https://i.loli.net/2021/01/11/r9P7aBwXqFyZCIG.png" class="img-fluid rounded z-depth-1" zoomable=true %}
+{% include figure.html path="https://i.loli.net/2021/01/11/r9P7aBwXqFyZCIG.png" %}

@@ -5,6 +5,7 @@
         <div class="col-sm-2">
 
           <!-- Show badge icon -->
+          <div class="abbr">
           {%- if entry.abbr -%}
             {%- if site.data.pubimg[entry.abbr] -%}
               <abbr class="badge"><a href="{{site.data.pubimg[entry.abbr].url}}">{{site.data.pubimg[entry.abbr].badge}}</a></abbr>
@@ -12,6 +13,7 @@
               <abbr class="badge">{{site.data.pubimg[entry.abbr].badge}}</abbr>
             {%- endif -%}
           {%- endif -%}
+          </div>
 
           <!-- Show preview image -->
           <div class="teaser">

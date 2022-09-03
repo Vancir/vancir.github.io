@@ -13,7 +13,6 @@ group :jekyll_plugins do
     gem 'jekyll-target-blank'
     gem 'jekyll-twitter-plugin'
     gem 'jemoji'
-    gem 'mini_racer', github: 'sqreen/mini_racer', branch: 'use-libv8-node'
     gem 'unicode_utils'
     gem 'webrick'
 end

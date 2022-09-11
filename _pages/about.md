@@ -6,7 +6,7 @@ subtitle: >
   <h6 class="m-0 mb-2" style="font-size: 0.83em;"><a href="https://ps3lab.github.io" class="page-description" target="_blank">PennState System Security Lab</a></h6>
   <h6 class="m-0 mb-2" style="font-size: 0.83em;"><a href="https://ist.psu.edu" class="page-description" target="_blank">College of Information Sciences and Technology</a></h6>
   <h6 class="m-0 mb-2" style="font-size: 0.83em;"><a href="https://www.psu.edu" class="page-description" target="_blank">The Pennsylvania State University</a></h6>
-  <h6 class="m-0 mb-2" style="font-size: 0.83em;"><a href="mailto:svl6237@psu.edu" class="page-description" target="_blank">E-Mail: svl6237 [AT] psu dot edu</a></h6>
+  <h6 class="m-0 mb-2" style="font-size: 0.83em;"><a href="mailto:songliu@psu.edu" class="page-description" target="_blank">E-Mail: songliu [AT] psu dot edu</a></h6>
 
 profile:
   align: left

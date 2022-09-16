@@ -2,8 +2,7 @@
 layout: post
 title: 回到2015年看看那时ClusterFuzz的设计
 date: 2021-04-17 11:59:38
-tags: ['clusterfuzz', 'ossfuzz']
-category: ['fuzzing']
+tags: ['clusterfuzz', 'fuzzing']
 ---
 
 

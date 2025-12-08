@@ -1,0 +1,436 @@
+<!DOCTYPE html> <html lang="en"> <head> <meta name="google-site-verification" content="kFTGHTKWYnz7RkFa5Fi4_Tfdijlcl0sWeQbJo40mXOw"/> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"> <meta http-equiv="X-UA-Compatible" content="IE=edge"> <title>检测Android虚拟机的方法和代码实现 | Song Liu</title> <meta name="author" content="Song Liu"/> <meta name="description" content="A simple, whitespace theme for academics. Based on [*folio](https://github.com/bogoli/-folio) design. "/> <meta name="keywords" content="jekyll, jekyll-theme, academic-website, portfolio-website"/> <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha256-DF7Zhf293AJxJNTmh5zhoYYIMs2oXitRfBjY+9L//AY=" crossorigin="anonymous"> <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdbootstrap@4.20.0/css/mdb.min.css" integrity="sha256-jpjYvU3G3N6nrrBwXJoVEYI/0zw8htfFnhT9ljN3JJw=" crossorigin="anonymous"/> <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" integrity="sha256-mUZM63G8m73Mcidfrv5E+Y61y7a12O5mW4ezU3bxqW4=" crossorigin="anonymous"> <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/academicons@1.9.1/css/academicons.min.css" integrity="sha256-i1+4qU2G2860dGGIOJscdC30s9beBXjFfzjWLjBRsBg=" crossorigin="anonymous"> <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@200&display=swap" rel="stylesheet"> <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jwarby/jekyll-pygments-themes@master/github.css" media="none" id="highlight_theme_light"/> <link rel="shortcut icon" href="/assets/img/favicon.ico"/> <link rel="stylesheet" href="/assets/css/main.css"> <link rel="canonical" href="https://vancir.github.io/blog/2018/how-to-detect-android-emulator/"> <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jwarby/jekyll-pygments-themes@master/native.css" media="none" id="highlight_theme_dark"/> <script src="/assets/js/theme.js"></script> <script src="/assets/js/dark_mode.js"></script> </head> <body class="fixed-top-nav "> <header> <nav id="navbar" class="navbar navbar-light navbar-expand-sm fixed-top"> <div class="container"> <a class="navbar-brand title font-weight-lighter" href="https://vancir.github.io/">Song Liu</a> <button class="navbar-toggler collapsed ml-auto" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"> <span class="sr-only">Toggle navigation</span> <span class="icon-bar top-bar"></span> <span class="icon-bar middle-bar"></span> <span class="icon-bar bottom-bar"></span> </button> <div class="collapse navbar-collapse text-right" id="navbarNav"> <ul class="navbar-nav ml-auto flex-nowrap"> <li class="nav-item "> <a class="nav-link" href="/">About</a> </li> <li class="nav-item active"> <a class="nav-link" href="/blog/">Blog<span class="sr-only">(current)</span></a> </li> <li class="nav-item "> <a class="nav-link" target="_blank" href="/assets/pdf/resume.pdf">Resume</a> </li> <div class="toggle-container"> <a id="light-toggle"> <i class="fas fa-moon"></i> <i class="fas fa-sun"></i> </a> </div> </ul> </div> </div> </nav> </header> <div class="container mt-4"> <div class="post"> <header class="post-header"> <h1 class="post-title">检测Android虚拟机的方法和代码实现</h1> <p class="post-meta">April 4, 2018</p> <p class="post-tags"> <a href="/blog/2018"> <i class="fas fa-calendar fa-sm"></i> 2018 </a>   ·   <a href="/blog/tag/antivm"> <i class="fas fa-hashtag fa-sm"></i> antivm</a>   <a href="/blog/tag/malware"> <i class="fas fa-hashtag fa-sm"></i> malware</a>   </p> </header> <article class="post-content"> <p>刚刚看了一些关于Detect Android Emulator的开源项目/文章/论文, 我看的这些其实都是13年14年提出的方法, 方法里大多是检测一些环境属性, 检查一些文件这样, 但实际上检测的思路并不局限于此. 有的是很直接了当去检测qemu, 而其它的方法则是旁敲侧击比如检测adb, 检测ptrace之类的. 思路也很灵活. 最后看到有提出通过利用QEMU这样的模拟CPU与物理CPU之间的实际差异(任务调度差异), 模拟传感器和物理传感器的差异, 缓存的差异等方法来检测. 相比检测环境属性, 检测效果会提升很多.</p> <p>下面我就列出各个资料中所提出的一些方法/思路/代码供大家交流学习.</p> <h2 id="qemu-properties">QEMU Properties</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Property</span> <span class="o">{</span>
+	<span class="kd">public</span> <span class="nc">String</span> <span class="n">name</span><span class="o">;</span>
+	<span class="kd">public</span> <span class="nc">String</span> <span class="n">seek_value</span><span class="o">;</span>
+	
+	<span class="kd">public</span> <span class="nf">Property</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="nc">String</span> <span class="n">seek_value</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">seek_value</span> <span class="o">=</span> <span class="n">seek_value</span><span class="o">;</span>
+	<span class="o">}</span>
+<span class="o">}</span>
+<span class="cm">/** 
+ * 已知属性, 格式为 [属性名, 属性值], 用于判定当前是否为QEMU环境
+ */</span>
+<span class="kd">private</span> <span class="kd">static</span> <span class="nc">Property</span><span class="o">[]</span> <span class="n">known_props</span> <span class="o">=</span> <span class="o">{</span><span class="k">new</span> <span class="nc">Property</span><span class="o">(</span><span class="s">"init.svc.qemud"</span><span class="o">,</span> <span class="kc">null</span><span class="o">),</span>
+        <span class="k">new</span> <span class="nf">Property</span><span class="o">(</span><span class="s">"init.svc.qemu-props"</span><span class="o">,</span> <span class="kc">null</span><span class="o">),</span> <span class="k">new</span> <span class="nc">Property</span><span class="o">(</span><span class="s">"qemu.hw.mainkeys"</span><span class="o">,</span> <span class="kc">null</span><span class="o">),</span>
+        <span class="k">new</span> <span class="nf">Property</span><span class="o">(</span><span class="s">"qemu.sf.fake_camera"</span><span class="o">,</span> <span class="kc">null</span><span class="o">),</span> <span class="k">new</span> <span class="nc">Property</span><span class="o">(</span><span class="s">"qemu.sf.lcd_density"</span><span class="o">,</span> <span class="kc">null</span><span class="o">),</span>
+        <span class="k">new</span> <span class="nf">Property</span><span class="o">(</span><span class="s">"ro.bootloader"</span><span class="o">,</span> <span class="s">"unknown"</span><span class="o">),</span> <span class="k">new</span> <span class="nc">Property</span><span class="o">(</span><span class="s">"ro.bootmode"</span><span class="o">,</span> <span class="s">"unknown"</span><span class="o">),</span>
+        <span class="k">new</span> <span class="nf">Property</span><span class="o">(</span><span class="s">"ro.hardware"</span><span class="o">,</span> <span class="s">"goldfish"</span><span class="o">),</span> <span class="k">new</span> <span class="nc">Property</span><span class="o">(</span><span class="s">"ro.kernel.android.qemud"</span><span class="o">,</span> <span class="kc">null</span><span class="o">),</span>
+        <span class="k">new</span> <span class="nf">Property</span><span class="o">(</span><span class="s">"ro.kernel.qemu.gles"</span><span class="o">,</span> <span class="kc">null</span><span class="o">),</span> <span class="k">new</span> <span class="nc">Property</span><span class="o">(</span><span class="s">"ro.kernel.qemu"</span><span class="o">,</span> <span class="s">"1"</span><span class="o">),</span>
+        <span class="k">new</span> <span class="nf">Property</span><span class="o">(</span><span class="s">"ro.product.device"</span><span class="o">,</span> <span class="s">"generic"</span><span class="o">),</span> <span class="k">new</span> <span class="nc">Property</span><span class="o">(</span><span class="s">"ro.product.model"</span><span class="o">,</span> <span class="s">"sdk"</span><span class="o">),</span>
+        <span class="k">new</span> <span class="nf">Property</span><span class="o">(</span><span class="s">"ro.product.name"</span><span class="o">,</span> <span class="s">"sdk"</span><span class="o">),</span>
+        <span class="k">new</span> <span class="nf">Property</span><span class="o">(</span><span class="s">"ro.serialno"</span><span class="o">,</span> <span class="kc">null</span><span class="o">)};</span>
+<span class="cm">/**
+ * 一个阈值, 因为所谓"已知"的模拟器属性并不完全准确, 有可能出现假阳性结果, 因此保持一定的阈值能让检测效果更好
+ */</span>
+<span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="no">MIN_PROPERTIES_THRESHOLD</span> <span class="o">=</span> <span class="mh">0x5</span><span class="o">;</span>
+<span class="cm">/**
+ * 尝试通过查询指定的系统属性来检测QEMU环境, 最后跟阈值比较得出检测结果.
+ *
+ * @param context A {link Context} object for the Android application.
+ * @return {@code true} if enough properties where found to exist or {@code false} if not.
+ */</span>
+<span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">hasQEmuProps</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">found_props</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+
+    <span class="k">for</span> <span class="o">(</span><span class="nc">Property</span> <span class="n">property</span> <span class="o">:</span> <span class="n">known_props</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">String</span> <span class="n">property_value</span> <span class="o">=</span> <span class="nc">Utilities</span><span class="o">.</span><span class="na">getProp</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">property</span><span class="o">.</span><span class="na">name</span><span class="o">);</span>
+        <span class="c1">// See if we expected just a non-null</span>
+        <span class="k">if</span> <span class="o">((</span><span class="n">property</span><span class="o">.</span><span class="na">seek_value</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">property_value</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">found_props</span><span class="o">++;</span>
+        <span class="o">}</span>
+        <span class="c1">// See if we expected a value to seek</span>
+        <span class="k">if</span> <span class="o">((</span><span class="n">property</span><span class="o">.</span><span class="na">seek_value</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">property_value</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="n">property</span><span class="o">.</span><span class="na">seek_value</span><span class="o">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">found_props</span><span class="o">++;</span>
+        <span class="o">}</span>
+
+    <span class="o">}</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">found_props</span> <span class="o">&gt;=</span> <span class="no">MIN_PROPERTIES_THRESHOLD</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <p>这些都是基于一些经验和特征来比对的属性, 这里的属性以及之后的一些文件呀属性啊之类的我就不再多作解释.</p> <h2 id="device-id">Device ID</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span><span class="o">[]</span> <span class="n">known_device_ids</span> <span class="o">=</span> <span class="o">{</span><span class="s">"000000000000000"</span><span class="o">,</span> <span class="c1">// Default emulator id</span>
+        <span class="s">"e21833235b6eef10"</span><span class="o">,</span> <span class="c1">// VirusTotal id</span>
+        <span class="s">"012345678912345"</span><span class="o">};</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasKnownDeviceId</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">TelephonyManager</span> <span class="n">telephonyManager</span> <span class="o">=</span> <span class="o">(</span><span class="nc">TelephonyManager</span><span class="o">)</span> <span class="n">context</span><span class="o">.</span><span class="na">getSystemService</span><span class="o">(</span><span class="nc">Context</span><span class="o">.</span><span class="na">TELEPHONY_SERVICE</span><span class="o">);</span>
+
+    <span class="nc">String</span> <span class="n">deviceId</span> <span class="o">=</span> <span class="n">telephonyManager</span><span class="o">.</span><span class="na">getDeviceId</span><span class="o">();</span>
+
+    <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">known_deviceId</span> <span class="o">:</span> <span class="n">known_device_ids</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">known_deviceId</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">deviceId</span><span class="o">))</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>
+
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <h2 id="default-number">Default Number</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span><span class="o">[]</span> <span class="n">known_numbers</span> <span class="o">=</span> <span class="o">{</span>
+        <span class="s">"15555215554"</span><span class="o">,</span> <span class="c1">// 模拟器默认电话号码 + VirusTotal</span>
+        <span class="s">"15555215556"</span><span class="o">,</span> <span class="s">"15555215558"</span><span class="o">,</span> <span class="s">"15555215560"</span><span class="o">,</span> <span class="s">"15555215562"</span><span class="o">,</span> <span class="s">"15555215564"</span><span class="o">,</span> <span class="s">"15555215566"</span><span class="o">,</span>
+        <span class="s">"15555215568"</span><span class="o">,</span> <span class="s">"15555215570"</span><span class="o">,</span> <span class="s">"15555215572"</span><span class="o">,</span> <span class="s">"15555215574"</span><span class="o">,</span> <span class="s">"15555215576"</span><span class="o">,</span> <span class="s">"15555215578"</span><span class="o">,</span>
+        <span class="s">"15555215580"</span><span class="o">,</span> <span class="s">"15555215582"</span><span class="o">,</span> <span class="s">"15555215584"</span><span class="o">,};</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasKnownPhoneNumber</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">TelephonyManager</span> <span class="n">telephonyManager</span> <span class="o">=</span> <span class="o">(</span><span class="nc">TelephonyManager</span><span class="o">)</span> <span class="n">context</span><span class="o">.</span><span class="na">getSystemService</span><span class="o">(</span><span class="nc">Context</span><span class="o">.</span><span class="na">TELEPHONY_SERVICE</span><span class="o">);</span>
+
+    <span class="nc">String</span> <span class="n">phoneNumber</span> <span class="o">=</span> <span class="n">telephonyManager</span><span class="o">.</span><span class="na">getLine1Number</span><span class="o">();</span>
+
+    <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">number</span> <span class="o">:</span> <span class="n">known_numbers</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">number</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">phoneNumber</span><span class="o">))</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>
+
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <h2 id="imsi">IMSI</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span><span class="o">[]</span> <span class="n">known_imsi_ids</span> <span class="o">=</span> <span class="o">{</span><span class="s">"310260000000000"</span> <span class="c1">// 默认IMSI编号</span>
+<span class="o">};</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasKnownImsi</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">TelephonyManager</span> <span class="n">telephonyManager</span> <span class="o">=</span> <span class="o">(</span><span class="nc">TelephonyManager</span><span class="o">)</span> <span class="n">context</span><span class="o">.</span><span class="na">getSystemService</span><span class="o">(</span><span class="nc">Context</span><span class="o">.</span><span class="na">TELEPHONY_SERVICE</span><span class="o">);</span>
+    <span class="nc">String</span> <span class="n">imsi</span> <span class="o">=</span> <span class="n">telephonyManager</span><span class="o">.</span><span class="na">getSubscriberId</span><span class="o">();</span>
+
+    <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">known_imsi</span> <span class="o">:</span> <span class="n">known_imsi_ids</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">known_imsi</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">imsi</span><span class="o">))</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <h2 id="build类">Build类</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasEmulatorBuild</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">String</span> <span class="no">BOARD</span> <span class="o">=</span> <span class="n">android</span><span class="o">.</span><span class="na">os</span><span class="o">.</span><span class="na">Build</span><span class="o">.</span><span class="na">BOARD</span><span class="o">;</span> <span class="c1">// The name of the underlying board, like "unknown".</span>
+    <span class="c1">// This appears to occur often on real hardware... that's sad</span>
+    <span class="c1">// String BOOTLOADER = android.os.Build.BOOTLOADER; // The system bootloader version number.</span>
+    <span class="nc">String</span> <span class="no">BRAND</span> <span class="o">=</span> <span class="n">android</span><span class="o">.</span><span class="na">os</span><span class="o">.</span><span class="na">Build</span><span class="o">.</span><span class="na">BRAND</span><span class="o">;</span> <span class="c1">// The brand (e.g., carrier) the software is customized for, if any.</span>
+    <span class="c1">// "generic"</span>
+    <span class="nc">String</span> <span class="no">DEVICE</span> <span class="o">=</span> <span class="n">android</span><span class="o">.</span><span class="na">os</span><span class="o">.</span><span class="na">Build</span><span class="o">.</span><span class="na">DEVICE</span><span class="o">;</span> <span class="c1">// The name of the industrial design. "generic"</span>
+    <span class="nc">String</span> <span class="no">HARDWARE</span> <span class="o">=</span> <span class="n">android</span><span class="o">.</span><span class="na">os</span><span class="o">.</span><span class="na">Build</span><span class="o">.</span><span class="na">HARDWARE</span><span class="o">;</span> <span class="c1">// The name of the hardware (from the kernel command line or</span>
+    <span class="c1">// /proc). "goldfish"</span>
+    <span class="nc">String</span> <span class="no">MODEL</span> <span class="o">=</span> <span class="n">android</span><span class="o">.</span><span class="na">os</span><span class="o">.</span><span class="na">Build</span><span class="o">.</span><span class="na">MODEL</span><span class="o">;</span> <span class="c1">// The end-user-visible name for the end product. "sdk"</span>
+    <span class="nc">String</span> <span class="no">PRODUCT</span> <span class="o">=</span> <span class="n">android</span><span class="o">.</span><span class="na">os</span><span class="o">.</span><span class="na">Build</span><span class="o">.</span><span class="na">PRODUCT</span><span class="o">;</span> <span class="c1">// The name of the overall product.</span>
+    <span class="k">if</span> <span class="o">((</span><span class="no">BOARD</span><span class="o">.</span><span class="na">compareTo</span><span class="o">(</span><span class="s">"unknown"</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="cm">/* || (BOOTLOADER.compareTo("unknown") == 0) */</span>
+            <span class="o">||</span> <span class="o">(</span><span class="no">BRAND</span><span class="o">.</span><span class="na">compareTo</span><span class="o">(</span><span class="s">"generic"</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">||</span> <span class="o">(</span><span class="no">DEVICE</span><span class="o">.</span><span class="na">compareTo</span><span class="o">(</span><span class="s">"generic"</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+            <span class="o">||</span> <span class="o">(</span><span class="no">MODEL</span><span class="o">.</span><span class="na">compareTo</span><span class="o">(</span><span class="s">"sdk"</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">||</span> <span class="o">(</span><span class="no">PRODUCT</span><span class="o">.</span><span class="na">compareTo</span><span class="o">(</span><span class="s">"sdk"</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+            <span class="o">||</span> <span class="o">(</span><span class="no">HARDWARE</span><span class="o">.</span><span class="na">compareTo</span><span class="o">(</span><span class="s">"goldfish"</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">))</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <h2 id="运营商名">运营商名</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">isOperatorNameAndroid</span><span class="o">(</span><span class="nc">Context</span> <span class="n">paramContext</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">String</span> <span class="n">szOperatorName</span> <span class="o">=</span> <span class="o">((</span><span class="nc">TelephonyManager</span><span class="o">)</span> <span class="n">paramContext</span><span class="o">.</span><span class="na">getSystemService</span><span class="o">(</span><span class="nc">Context</span><span class="o">.</span><span class="na">TELEPHONY_SERVICE</span><span class="o">)).</span><span class="na">getNetworkOperatorName</span><span class="o">();</span>
+    <span class="kt">boolean</span> <span class="n">isAndroid</span> <span class="o">=</span> <span class="n">szOperatorName</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="s">"android"</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">isAndroid</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <h2 id="qemu驱动">QEMU驱动</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span><span class="o">[]</span> <span class="n">known_qemu_drivers</span> <span class="o">=</span> <span class="o">{</span><span class="s">"goldfish"</span><span class="o">};</span>
+<span class="cm">/**
+ * 读取驱动文件, 检查是否包含已知的qemu驱动
+ *
+ * @return {@code true} if any known drivers where found to exist or {@code false} if not.
+ */</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasQEmuDrivers</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">File</span> <span class="n">drivers_file</span> <span class="o">:</span> <span class="k">new</span> <span class="nc">File</span><span class="o">[]{</span><span class="k">new</span> <span class="nc">File</span><span class="o">(</span><span class="s">"/proc/tty/drivers"</span><span class="o">),</span> <span class="k">new</span> <span class="nc">File</span><span class="o">(</span><span class="s">"/proc/cpuinfo"</span><span class="o">)})</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">drivers_file</span><span class="o">.</span><span class="na">exists</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="n">drivers_file</span><span class="o">.</span><span class="na">canRead</span><span class="o">())</span> <span class="o">{</span>
+            <span class="c1">// We don't care to read much past things since info we care about should be inside here</span>
+            <span class="kt">byte</span><span class="o">[]</span> <span class="n">data</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[</span><span class="mi">1024</span><span class="o">];</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="nc">InputStream</span> <span class="n">is</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">FileInputStream</span><span class="o">(</span><span class="n">drivers_file</span><span class="o">);</span>
+                <span class="n">is</span><span class="o">.</span><span class="na">read</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+                <span class="n">is</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">exception</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">exception</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+
+            <span class="nc">String</span> <span class="n">driver_data</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">String</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+            <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">known_qemu_driver</span> <span class="o">:</span> <span class="nc">FindEmulator</span><span class="o">.</span><span class="na">known_qemu_drivers</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">driver_data</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="n">known_qemu_driver</span><span class="o">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <h2 id="qemu文件">QEMU文件</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span><span class="o">[]</span> <span class="n">known_files</span> <span class="o">=</span> <span class="o">{</span><span class="s">"/system/lib/libc_malloc_debug_qemu.so"</span><span class="o">,</span> <span class="s">"/sys/qemu_trace"</span><span class="o">,</span>
+        <span class="s">"/system/bin/qemu-props"</span><span class="o">};</span>
+<span class="cm">/**
+ * 检查是否存在已知的QEMU环境文件
+ *
+ * @return {@code true} if any files where found to exist or {@code false} if not.
+ */</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasQEmuFiles</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">pipe</span> <span class="o">:</span> <span class="n">known_files</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">File</span> <span class="n">qemu_file</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">File</span><span class="o">(</span><span class="n">pipe</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">qemu_file</span><span class="o">.</span><span class="na">exists</span><span class="o">())</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <h2 id="genymotion文件">Genymotion文件</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span><span class="o">[]</span> <span class="n">known_geny_files</span> <span class="o">=</span> <span class="o">{</span><span class="s">"/dev/socket/genyd"</span><span class="o">,</span> <span class="s">"/dev/socket/baseband_genyd"</span><span class="o">};</span>
+<span class="cm">/**
+ * 检查是否存在已知的Genemytion环境文件
+ *
+ * @return {@code true} if any files where found to exist or {@code false} if not.
+ */</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasGenyFiles</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">file</span> <span class="o">:</span> <span class="n">known_geny_files</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">File</span> <span class="n">geny_file</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">File</span><span class="o">(</span><span class="n">file</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">geny_file</span><span class="o">.</span><span class="na">exists</span><span class="o">())</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <h2 id="qemu管道">QEMU管道</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span><span class="o">[]</span> <span class="n">known_pipes</span> <span class="o">=</span> <span class="o">{</span><span class="s">"/dev/socket/qemud"</span><span class="o">,</span> <span class="s">"/dev/qemu_pipe"</span><span class="o">};</span>
+<span class="cm">/**
+ * 检查是否存在已知的QEMU使用的管道
+ *
+ * @return {@code true} if any pipes where found to exist or {@code false} if not.
+ */</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasPipes</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">pipe</span> <span class="o">:</span> <span class="n">known_pipes</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">File</span> <span class="n">qemu_socket</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">File</span><span class="o">(</span><span class="n">pipe</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">qemu_socket</span><span class="o">.</span><span class="na">exists</span><span class="o">())</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <h2 id="设置断点">设置断点</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">static</span> <span class="o">{</span>
+    <span class="c1">// This is only valid for arm</span>
+    <span class="nc">System</span><span class="o">.</span><span class="na">loadLibrary</span><span class="o">(</span><span class="s">"anti"</span><span class="o">);</span>
+<span class="o">}</span>
+<span class="kd">public</span> <span class="kd">native</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">qemuBkpt</span><span class="o">();</span>
+
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">checkQemuBreakpoint</span><span class="o">()</span> <span class="o">{</span>
+    <span class="kt">boolean</span> <span class="n">hit_breakpoint</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+
+    <span class="c1">// Potentially you may want to see if this is a specific value</span>
+    <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="n">qemuBkpt</span><span class="o">();</span>
+
+    <span class="k">if</span> <span class="o">(</span><span class="n">result</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">hit_breakpoint</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="n">hit_breakpoint</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <p>以下是对应的c++代码</p> <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">handler_sigtrap</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">handler_sigbus</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">setupSigTrap</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// BKPT throws SIGTRAP on nexus 5 / oneplus one (and most devices)</span>
+  <span class="n">signal</span><span class="p">(</span><span class="n">SIGTRAP</span><span class="p">,</span> <span class="n">handler_sigtrap</span><span class="p">);</span>
+  <span class="c1">// BKPT throws SIGBUS on nexus 4</span>
+  <span class="n">signal</span><span class="p">(</span><span class="n">SIGBUS</span><span class="p">,</span> <span class="n">handler_sigbus</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// This will cause a SIGSEGV on some QEMU or be properly respected</span>
+<span class="kt">int</span> <span class="nf">tryBKPT</span><span class="p">()</span> <span class="p">{</span>
+  <span class="n">__asm__</span> <span class="n">__volatile__</span> <span class="p">(</span><span class="s">"bkpt 255"</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">jint</span> <span class="nf">Java_diff_strazzere_anti_emulator_FindEmulator_qemuBkpt</span><span class="p">(</span><span class="n">JNIEnv</span><span class="o">*</span> <span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">jObject</span><span class="p">)</span> <span class="p">{</span>
+  
+  <span class="n">pid_t</span> <span class="n">child</span> <span class="o">=</span> <span class="n">fork</span><span class="p">();</span>
+  <span class="kt">int</span> <span class="n">child_status</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  
+  <span class="k">if</span><span class="p">(</span><span class="n">child</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">setupSigTrap</span><span class="p">();</span>
+    <span class="n">tryBKPT</span><span class="p">();</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">child</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+
+    <span class="kt">int</span> <span class="n">timeout</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">while</span> <span class="p">(</span> <span class="n">waitpid</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">child_status</span><span class="p">,</span> <span class="n">WNOHANG</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+      <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+      <span class="c1">// Time could be adjusted here, though in my experience if the child has not returned instantly</span>
+      <span class="c1">// then something has gone wrong and it is an emulated device</span>
+      <span class="k">if</span><span class="p">(</span><span class="n">i</span><span class="o">++</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">timeout</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span><span class="p">(</span><span class="n">timeout</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// Process timed out - likely an emulated device and child is frozen</span>
+      <span class="n">status</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span> <span class="n">WIFEXITED</span><span class="p">(</span><span class="n">child_status</span><span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// 子进程正常退出</span>
+      <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="c1">// Didn't exit properly - very likely an emulator</span>
+      <span class="n">status</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">// Ensure child is dead</span>
+    <span class="n">kill</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">SIGKILL</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="n">status</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div> <p>这里我的描述可能并不准确, 因为并没有找到相关的资料. 我只能以自己的理解来解释一下:</p> <p><strong>SIGTRAP</strong>是调试器设置断点时发生的信号, 在nexus5或一加手机等大多数手机都可以触发. <strong>SIGBUS</strong>则是在一个总线错误, 指针也许访问了一个有效地址, 但总线会因为数据未对齐等原因无法使用, 在nexus4手机上可以触发. 而<strong>bkpt</strong>则是arm的断点指令, 这是曾经qemu被提出来的一个issue, qemu会因为<strong>SIGSEGV</strong>信号而崩溃, 作者想利用这个崩溃来检测qemu. 如果程序没有正常退出或被冻结, 那么就可以认定很可能是在模拟器里.</p> <h2 id="adb">ADB</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasEmulatorAdb</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nc">FindDebugger</span><span class="o">.</span><span class="na">hasAdbInEmulator</span><span class="o">();</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">exception</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">exception</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div> <h2 id="isuseramonkey">isUserAMonkey()</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">isUserAMonkey</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="nc">ActivityManager</span><span class="o">.</span><span class="na">isUserAMonkey</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div></div> <p>这个其实是用于检测当前操作到底是用户还是脚本在要求应用执行.</p> <h2 id="isdebuggerconnected">isDebuggerConnected()</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * 你信或不信, 还真有许多加固程序使用这个方法...
+ */</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">isBeingDebugged</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="nc">Debug</span><span class="o">.</span><span class="na">isDebuggerConnected</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div></div> <p>这个方法是用来检测调试, 判断是否有调试器连接.</p> <h2 id="ptrace">ptrace</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="nc">String</span> <span class="n">tracerpid</span> <span class="o">=</span> <span class="s">"TracerPid"</span><span class="o">;</span>
+<span class="cm">/**
+ * 阿里巴巴用于检测是否在跟踪应用进程
+ * 
+ * 容易规避, 用法是创建一个线程每3秒检测一次, 如果检测到则程序崩溃
+ * 
+ * @return
+ * @throws IOException
+ */</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasTracerPid</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+    <span class="nc">BufferedReader</span> <span class="n">reader</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BufferedReader</span><span class="o">(</span><span class="k">new</span> <span class="nc">InputStreamReader</span><span class="o">(</span><span class="k">new</span> <span class="nc">FileInputStream</span><span class="o">(</span><span class="s">"/proc/self/status"</span><span class="o">)),</span> <span class="mi">1000</span><span class="o">);</span>
+        <span class="nc">String</span> <span class="n">line</span><span class="o">;</span>
+
+        <span class="k">while</span> <span class="o">((</span><span class="n">line</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="na">readLine</span><span class="o">())</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">line</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">&gt;</span> <span class="n">tracerpid</span><span class="o">.</span><span class="na">length</span><span class="o">())</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">line</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">tracerpid</span><span class="o">.</span><span class="na">length</span><span class="o">()).</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">tracerpid</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="nc">Integer</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">line</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="n">tracerpid</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">+</span> <span class="mi">1</span><span class="o">).</span><span class="na">trim</span><span class="o">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+                    <span class="o">}</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">exception</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">exception</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+    <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+        <span class="n">reader</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div> <p>这个方法是通过检查 <strong>/proc/self/status</strong>的<strong>TracerPid</strong>项, 这个项在没有跟踪的时候默认为0, 当有程序在跟踪时会修改为对应的pid. 因此如果<strong>TracerPid</strong>不等于0, 那么就可以认为是在模拟器环境.</p> <h2 id="tcp连接">TCP连接</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasAdbInEmulator</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+    <span class="kt">boolean</span> <span class="n">adbInEmulator</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+    <span class="nc">BufferedReader</span> <span class="n">reader</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BufferedReader</span><span class="o">(</span><span class="k">new</span> <span class="nc">InputStreamReader</span><span class="o">(</span><span class="k">new</span> <span class="nc">FileInputStream</span><span class="o">(</span><span class="s">"/proc/net/tcp"</span><span class="o">)),</span> <span class="mi">1000</span><span class="o">);</span>
+        <span class="nc">String</span> <span class="n">line</span><span class="o">;</span>
+        <span class="c1">// Skip column names</span>
+        <span class="n">reader</span><span class="o">.</span><span class="na">readLine</span><span class="o">();</span>
+
+        <span class="nc">ArrayList</span><span class="o">&lt;</span><span class="n">tcp</span><span class="o">&gt;</span> <span class="n">tcpList</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;</span><span class="n">tcp</span><span class="o">&gt;();</span>
+
+        <span class="k">while</span> <span class="o">((</span><span class="n">line</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="na">readLine</span><span class="o">())</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">tcpList</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">tcp</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="n">line</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">"\\W+"</span><span class="o">)));</span>
+        <span class="o">}</span>
+
+        <span class="n">reader</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+
+        <span class="c1">// Adb is always bounce to 0.0.0.0 - though the port can change</span>
+        <span class="c1">// real devices should be != 127.0.0.1</span>
+        <span class="kt">int</span> <span class="n">adbPort</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+        <span class="k">for</span> <span class="o">(</span><span class="n">tcp</span> <span class="n">tcpItem</span> <span class="o">:</span> <span class="n">tcpList</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">tcpItem</span><span class="o">.</span><span class="na">localIp</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">adbPort</span> <span class="o">=</span> <span class="n">tcpItem</span><span class="o">.</span><span class="na">localPort</span><span class="o">;</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">adbPort</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">for</span> <span class="o">(</span><span class="n">tcp</span> <span class="n">tcpItem</span> <span class="o">:</span> <span class="n">tcpList</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">((</span><span class="n">tcpItem</span><span class="o">.</span><span class="na">localIp</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">tcpItem</span><span class="o">.</span><span class="na">localPort</span> <span class="o">==</span> <span class="n">adbPort</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="n">adbInEmulator</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">exception</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">exception</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+    <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+        <span class="n">reader</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="n">adbInEmulator</span><span class="o">;</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">tcp</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
+    <span class="kd">public</span> <span class="kt">long</span> <span class="n">localIp</span><span class="o">;</span>
+    <span class="kd">public</span> <span class="kt">int</span> <span class="n">localPort</span><span class="o">;</span>
+    <span class="kd">public</span> <span class="kt">int</span> <span class="n">remoteIp</span><span class="o">;</span>
+    <span class="kd">public</span> <span class="kt">int</span> <span class="n">remotePort</span><span class="o">;</span>
+
+    <span class="kd">static</span> <span class="n">tcp</span> <span class="nf">create</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">params</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">tcp</span><span class="o">(</span><span class="n">params</span><span class="o">[</span><span class="mi">1</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">2</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">3</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">4</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">5</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">6</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">7</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">8</span><span class="o">],</span>
+                        <span class="n">params</span><span class="o">[</span><span class="mi">9</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">10</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">11</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">12</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">13</span><span class="o">],</span> <span class="n">params</span><span class="o">[</span><span class="mi">14</span><span class="o">]);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="nf">tcp</span><span class="o">(</span><span class="nc">String</span> <span class="n">id</span><span class="o">,</span> <span class="nc">String</span> <span class="n">localIp</span><span class="o">,</span> <span class="nc">String</span> <span class="n">localPort</span><span class="o">,</span> <span class="nc">String</span> <span class="n">remoteIp</span><span class="o">,</span> <span class="nc">String</span> <span class="n">remotePort</span><span class="o">,</span> <span class="nc">String</span> <span class="n">state</span><span class="o">,</span>
+                    <span class="nc">String</span> <span class="n">tx_queue</span><span class="o">,</span> <span class="nc">String</span> <span class="n">rx_queue</span><span class="o">,</span> <span class="nc">String</span> <span class="n">tr</span><span class="o">,</span> <span class="nc">String</span> <span class="n">tm_when</span><span class="o">,</span> <span class="nc">String</span> <span class="n">retrnsmt</span><span class="o">,</span> <span class="nc">String</span> <span class="n">uid</span><span class="o">,</span>
+                    <span class="nc">String</span> <span class="n">timeout</span><span class="o">,</span> <span class="nc">String</span> <span class="n">inode</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">id</span> <span class="o">=</span> <span class="nc">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="mi">16</span><span class="o">);</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">localIp</span> <span class="o">=</span> <span class="nc">Long</span><span class="o">.</span><span class="na">parseLong</span><span class="o">(</span><span class="n">localIp</span><span class="o">,</span> <span class="mi">16</span><span class="o">);</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">localPort</span> <span class="o">=</span> <span class="nc">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">localPort</span><span class="o">,</span> <span class="mi">16</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div> <p>这个方法是通过读取 <strong>/proc/net/tcp</strong>的信息来判断是否存在adb. 比如真机的的信息为<strong>0: 4604D20A:B512 A3D13AD8…</strong>, 而模拟器上的对应信息就是<strong>0: 00000000:0016 00000000:0000</strong>, 因为adb通常是反射到<strong>0.0.0.0</strong>这个ip上, 虽然端口有可能改变, 但确实是可行的.</p> <h2 id="taintdroid">TaintDroid</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasPackageNameInstalled</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">,</span> <span class="nc">String</span> <span class="n">packageName</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">PackageManager</span> <span class="n">packageManager</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="na">getPackageManager</span><span class="o">();</span>
+
+    <span class="c1">// In theory, if the package installer does not throw an exception, package exists</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="n">packageManager</span><span class="o">.</span><span class="na">getInstallerPackageName</span><span class="o">(</span><span class="n">packageName</span><span class="o">);</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">IllegalArgumentException</span> <span class="n">exception</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasAppAnalysisPackage</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="nc">Utilities</span><span class="o">.</span><span class="na">hasPackageNameInstalled</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="s">"org.appanalysis"</span><span class="o">);</span>
+<span class="o">}</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasTaintClass</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"dalvik.system.Taint"</span><span class="o">);</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="k">catch</span> <span class="o">(</span><span class="nc">ClassNotFoundException</span> <span class="n">exception</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div> <p>这个比较单纯了. 就是通过检测包名, 检测<strong>Taint</strong>类来判断是否安装有<strong>TaintDroid</strong>这个污点分析工具. 另外也还可以检测<strong>TaintDroid</strong>的一些成员变量.</p> <h2 id="eth0">eth0</h2> <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">hasEth0Interface</span><span class="o">()</span> <span class="o">{</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="k">for</span> <span class="o">(</span><span class="nc">Enumeration</span><span class="o">&lt;</span><span class="nc">NetworkInterface</span><span class="o">&gt;</span> <span class="n">en</span> <span class="o">=</span> <span class="nc">NetworkInterface</span><span class="o">.</span><span class="na">getNetworkInterfaces</span><span class="o">();</span> <span class="n">en</span><span class="o">.</span><span class="na">hasMoreElements</span><span class="o">();</span> <span class="o">)</span> <span class="o">{</span>
+            <span class="nc">NetworkInterface</span> <span class="n">intf</span> <span class="o">=</span> <span class="n">en</span><span class="o">.</span><span class="na">nextElement</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">intf</span><span class="o">.</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="s">"eth0"</span><span class="o">))</span>
+                <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">SocketException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+<span class="o">}</span>
+
+</code></pre></div></div> <p>检测是否存在<strong>eth0</strong>网卡.</p> <h2 id="传感器">传感器</h2> <p>手机上配备了各式各样的传感器, 但它们实质上都是基于从环境收集的信息输出值, 因此想要模拟传感器是非常具有挑战性的. 这些传感器为识别手机和模拟器提供了新的机会.</p> <p>比如在论文<strong>Rage Against the Virtual Machine: Hindering Dynamic Analysis of Android Malware</strong>中, 作者对Android模拟器的加速器进行测试, 作者发现Android模拟器上的传感器会在相同的时间间隔内(观测结果是0.8s, 标准偏差为0.003043)产生相同的值. 显然对于现实世界的传感器, 这是不可能的.</p> <div class="col-sm mt-3 mt-md-0"> <figure> <picture> <source media="(max-width: 480px)" srcset="https://i.loli.net/2020/10/25/lJsdfwkPRoXrWTZ-480.webp"></source> <source media="(max-width: 800px)" srcset="https://i.loli.net/2020/10/25/lJsdfwkPRoXrWTZ-800.webp"></source> <source media="(max-width: 1400px)" srcset="https://i.loli.net/2020/10/25/lJsdfwkPRoXrWTZ-1400.webp"></source> <img class="img-fluid rounded " src="https://i.loli.net/2020/10/25/lJsdfwkPRoXrWTZ.jpg" height="230" style="display:block;margin:0 auto;" data-zoomable=""> </picture> </figure> </div> <p>于是我们可以先注册一个传感器监听器, 如果注册失败, 就可能是在模拟器中(排除实际设备不支持传感器的可能性). 如果注册成功, 那么检查<strong>onSensorChanged</strong>回调方法, 如果在连续调用这个方法的过程所观察到的传感器值或时间间隔相同, 那么就可以认定是在模拟器环境中.</p> <h2 id="qemu任务调度">QEMU任务调度</h2> <p>出于性能优化的原因, QEMU在每次执行指令时都不会主动更新程序计数器(PC), 由于翻译指令在本地执行, 而增加PC需要额外的指令带来开销. 所以QEMU只在执行那些从线性执行过程里中断的指令(例如分支指令)时才会更新程序计数器. 这也就导致在执行一些基本块的期间如果发生了调度事件, 那么也没有办法恢复调度前的PC, 也是出于这个原因, QEMU仅在执行基本块后才发生调度事件, 绝不会执行的过程中发生.</p> <figure> <picture> <source media="(max-width: 480px)" srcset="https://i.loli.net/2020/10/25/ebIoUAySdj6OtWa-480.webp"></source> <source media="(max-width: 800px)" srcset="https://i.loli.net/2020/10/25/ebIoUAySdj6OtWa-800.webp"></source> <source media="(max-width: 1400px)" srcset="https://i.loli.net/2020/10/25/ebIoUAySdj6OtWa-1400.webp"></source> <img class="img-fluid rounded " src="https://i.loli.net/2020/10/25/ebIoUAySdj6OtWa.jpg" height="230" style="display:block;margin:0 auto;" data-zoomable=""> </picture> </figure> <p>如上图, 因为调度可能在任意时间发生, 所以在非模拟器环境下, 会观察到大量的调度点. 而在模拟器环境中, 只能看到特定的调度点.</p> <h2 id="smc识别">SMC识别</h2> <p>因为QEMU会跟踪代码页的改动, 于是存在一种新颖的方法来检测QEMU–使用自修改代码(Self-Modifying Code, SMC)引起模拟器和实际设备之间的执行流变化.</p> <figure> <picture> <source media="(max-width: 480px)" srcset="https://i.loli.net/2020/10/25/zaUkIypswWN3hTM-480.webp"></source> <source media="(max-width: 800px)" srcset="https://i.loli.net/2020/10/25/zaUkIypswWN3hTM-800.webp"></source> <source media="(max-width: 1400px)" srcset="https://i.loli.net/2020/10/25/zaUkIypswWN3hTM-1400.webp"></source> <img class="img-fluid rounded " src="https://i.loli.net/2020/10/25/zaUkIypswWN3hTM.jpg" height="230" style="display:block;margin:0 auto;" data-zoomable=""> </picture> </figure> <p>ARM处理器包含有两个不同的缓冲Cache, 一个用于指令访问(I-Cache), 而另一个用于数据访问(D-Cache). 但如ARM这样的哈佛架构并不能保证I-Cache和D-Cache之间的一致性. 因此CPU有可能在新代码片已经写入主存后执行旧的代码片(也许是无效的).</p> <p>这个问题可以通过强迫两个缓存一致得到解决, 这有两步:</p> <ol> <li>清理主存, 以便将D-Cache中新写入的代码移入主存</li> <li>使I-Cache无效, 以便它可以用主存的新内容重新填充.</li> </ol> <p>在原生Android代码中, 可以使用<strong>cacheflush</strong>函数, 该函数通过系统调用完成上述操作.</p> <figure> <picture> <source media="(max-width: 480px)" srcset="https://i.loli.net/2020/10/25/Y6dam7XNjwnx4gO-480.webp"></source> <source media="(max-width: 800px)" srcset="https://i.loli.net/2020/10/25/Y6dam7XNjwnx4gO-800.webp"></source> <source media="(max-width: 1400px)" srcset="https://i.loli.net/2020/10/25/Y6dam7XNjwnx4gO-1400.webp"></source> <img class="img-fluid rounded " src="https://i.loli.net/2020/10/25/Y6dam7XNjwnx4gO.jpg" height="230" style="display:block;margin:0 auto;" data-zoomable=""> </picture> </figure> <p>识别代码, 使用一个具有读写权限的内存, 其中包含两个不同函数f1和f2的代码, 这两个函数其实很简单, 只是单纯在一个全局字符串变量的末尾附加各自的函数名称, 这两个函数会在循环里交错执行, 这样就可以通过结果的字符串推断出函数调用序列.</p> <p>如前所述, 我们调用<strong>cacheflush</strong>来同步缓存. 在实际设备和模拟器上运行代码得到的结果是相同的–每次执行都会产生一致的函数调用序列.</p> <p>接下来我们移除调用<strong>cacheflush</strong>, 执行相同的操作. 那么在实际设备中, 我们每次运行都会观察到一个随机的函数调用序列, 这也如前所述的那样, 因为I-Cache可能包含一些旧指令, 每次调用的时候缓存都不同步所导致的.</p> <p>而模拟器环境却不会发生这样的情况, 而且函数调用序列会跟之前没有移除<strong>cacheflush</strong>时完全相同, 也就是每次函数调用前缓存都是一致的. 这是因为QEMU会跟踪代码页上的修改, 并确保生成的代码始终与内存中的目标指令匹配, 因此QEMU会放弃之前版本的代码翻译并重新生成新代码.</p> <h2 id="结语">结语</h2> <p>看到这里会不会已经觉得检测方法够多了. 可是我还只是看了13年14年的资料. 有关近几年的资料还未涉及.</p> <p>最后我就把这些检测方法整合在一张<a href="https://i.loli.net/2020/10/25/x1gzSDWEBAbQ9mG.jpg" target="_blank" rel="noopener noreferrer">思维导图</a>里供大家一览, 欢迎大家和我交流带带我</p> <h2 id="参考链接">参考链接</h2> <ul> <li> <a href="https://github.com/strazzere/anti-emulator" target="_blank" rel="noopener noreferrer">strazzere/anti-emulator</a>: 首次发表于2013年HitCon, 提出了检测虚拟机的一些方法和思路, 应该是Android模拟器检测的开山之作了, 本文也主要基于该仓库进行讲解.</li> <li> <a href="http://www.syssec-project.eu/m/page-media/3/petsas_rage_against_the_virtual_machine.pdf" target="_blank" rel="noopener noreferrer">Rage Against the Virtual Machine: Hindering Dynamic Analysis of Android Malware</a>: 通过任务调度检测和使用SMC识别都是参考于这篇论文. 这篇论文和下面这篇论文十分有参考价值, 值得一读.</li> <li> <a href="https://users.ece.cmu.edu/~tvidas/papers/ASIACCS14.pdf" target="_blank" rel="noopener noreferrer">Evading Android Runtime Analysis via Sandbox Detection</a>: 论文中提出了大量的检测Android运行环境的方法和思路, 内容丰富且十分全面, 也值得一读.</li> <li> <a href="https://github.com/CalebFenton/AndroidEmulatorDetect" target="_blank" rel="noopener noreferrer">CalebFenton/AndroidEmulatorDetect</a>: 这个仓库其实是整合了一些文章和仓库中的检测方法和代码, 而且并不全面, 不过倒是给出了很多参考链接, 我顺藤摸瓜.</li> <li> <a href="https://stackoverflow.com/questions/2799097/how-can-i-detect-when-an-android-application-is-running-in-the-emulator" target="_blank" rel="noopener noreferrer">How can I detect when an Android application is running in the emulator?</a>: 网友给出了很多解决方法. 但实际上并不全面, 也只是模拟器检测中的冰山一角罢了. 毕竟可以检测的地方多了去了.</li> <li><a href="http://cb.drops.wiki/drops/mobile-13486.html" target="_blank" rel="noopener noreferrer">利用任务调度特性检测Android模拟器</a></li> </ul> <figure> <picture> <source media="(max-width: 480px)" srcset="https://i.loli.net/2020/10/25/x1gzSDWEBAbQ9mG-480.webp"></source> <source media="(max-width: 800px)" srcset="https://i.loli.net/2020/10/25/x1gzSDWEBAbQ9mG-800.webp"></source> <source media="(max-width: 1400px)" srcset="https://i.loli.net/2020/10/25/x1gzSDWEBAbQ9mG-1400.webp"></source> <img class="img-fluid rounded " src="https://i.loli.net/2020/10/25/x1gzSDWEBAbQ9mG.jpg" height="230" style="display:block;margin:0 auto;" data-zoomable=""> </picture> </figure> </article> </div> </div> <footer class="fixed-bottom"> <div class="container mt-0" style="text-align: center;"> © Copyright 2025 Song Liu. Powered by <a href="https://jekyllrb.com/" target="_blank" rel="noopener noreferrer">Jekyll</a> with <a href="https://github.com/alshedivat/al-folio" target="_blank" rel="noopener noreferrer">al-folio</a> theme. </div> </footer> <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script> <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.2/dist/umd/popper.min.js" integrity="sha256-l/1pMF/+J4TThfgARS6KwWrk/egwuVvhRzfLAMQ6Ds4=" crossorigin="anonymous"></script> <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.min.js" integrity="sha256-SyTu6CwrfOhaznYZPoolVw2rxoY7lKYKQvqbtqN93HI=" crossorigin="anonymous"></script> <script src="https://cdn.jsdelivr.net/npm/mdbootstrap@4.20.0/js/mdb.min.js" integrity="sha256-NdbiivsvWt7VYCt6hYNT3h/th9vSTL4EDWeGs5SN3DA=" crossorigin="anonymous"></script> <script defer src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha256-Nn1q/fx0H7SNLZMQ5Hw5JLaTRZp0yILA/FRexe19VdI=" crossorigin="anonymous"></script> <script defer src="https://cdn.jsdelivr.net/npm/imagesloaded@4/imagesloaded.pkgd.min.js"></script> <script defer src="/assets/js/masonry.js" type="text/javascript"></script> <script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.0.6/dist/medium-zoom.min.js" integrity="sha256-EdPgYcPk/IIrw7FYeuJQexva49pVRZNmt3LculEr7zM=" crossorigin="anonymous"></script> <script src="/assets/js/zoom.js"></script> <script src="/assets/js/common.js"></script> <script type="text/javascript">window.MathJax={tex:{tags:"ams"}};</script> <script defer type="text/javascript" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3.2.0/es5/tex-mml-chtml.js"></script> <script defer src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script> <script async src="https://www.googletagmanager.com/gtag/js?id=G-ER5P9GS1T8"></script> <script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config","G-ER5P9GS1T8");</script> </body> </html>
